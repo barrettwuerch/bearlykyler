@@ -145,3 +145,126 @@ Object.assign(prototypes,{
 magnetic:{title:'Magnetic button',html:magnetHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--amber')+cssFor(/^\.magnetic/),js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
 marquee:{title:'Marquee',html:marqueeHTML,css:'*{box-sizing:border-box}body{display:block!important;padding:40px 0}'+varsFor('--muted','--amber')+cssFor(/^\.marquee|^marquee-run$/),js:wireMarquee.toString()+";wireMarquee(document.querySelector('.marquee'));"},
 counter:{title:'Count up',html:counterHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--muted')+cssFor(/^\.counter/),js:wireCount.toString()+";wireCount(document.querySelector('.counter'));"}});
+
+/* Confirm tile, signal orb and odometer. Vanilla builds for this site. */
+function wireConfirm(root){const trigger=root.querySelector('.confirm-trigger'),status=root.querySelector('[role=status]');
+ let hold=0;
+ const finish=(mark,ms,word)=>{clearTimeout(hold);
+  root.classList.remove('open');trigger.setAttribute('aria-expanded','false');
+  root.classList.add(mark);status.textContent=word;trigger.focus();
+  hold=setTimeout(()=>{root.classList.remove(mark);status.textContent=''},ms)};
+ trigger.addEventListener('click',()=>{
+  if(root.classList.contains('open')){finish('kept',600,'Kept');return}
+  clearTimeout(hold);root.classList.remove('done','kept');status.textContent='';
+  root.classList.add('open');trigger.setAttribute('aria-expanded','true')});
+ root.querySelector('[data-confirm]').addEventListener('click',()=>finish('done',1400,'Deleted'));
+ root.querySelector('[data-cancel]').addEventListener('click',()=>finish('kept',600,'Kept'));
+ // Escape is how people expect to back out of a confirmation.
+ root.addEventListener('keydown',e=>{if(e.key==='Escape'&&root.classList.contains('open')){e.stopPropagation();finish('kept',600,'Kept')}});
+}
+function wireOrb(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d'),readout=root.querySelector('.orb-state');
+ const tabs=[...root.querySelectorAll('[data-orb]')];
+ const size=canvas.width,dpr=Math.min(devicePixelRatio||1,2);
+ canvas.width=canvas.height=Math.round(size*dpr);canvas.style.width=canvas.style.height=size+'px';
+ // Scale by buffer/size rather than by dpr, so the transform stays exact when
+ // the buffer rounds.
+ ctx.scale(canvas.width/size,canvas.height/size);
+ ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()||'#247ab6';
+ const GRID=11,half=(GRID-1)/2,gap=size*.74/(GRID-1),rmax=gap*.6,mid=size/2;
+ const REST={idle:.86,listening:1,thinking:.93};
+ const weights={idle:1,listening:0,thinking:0};
+ let mode='idle',scale=REST.idle,vel=0,clock=0,last=0,frame=0;
+
+ // Two slow waves multiplied: neither crosses zero, so the level never snaps
+ // at a trough the way a rectified sine does.
+ const level=t=>.24+.76*(.45+.55*(.5+.5*Math.sin(t*.64+.4)))*(.5+.5*Math.sin(t*1.87+1.1));
+ const heat=(state,d,nx,ny,t,amp)=>{
+  if(state==='listening')return .3+amp*(.34+.4*(.5+.5*Math.sin(d*4.6-t*3.1)));
+  if(state==='thinking'){let sum=0;
+   for(const o of [[.6,2.1,0,.42],[.38,-1.6,2.2,.35],[.8,1.1,4.1,.33]]){
+    const a=t*o[1]+o[2],dx=nx-Math.cos(a)*o[0],dy=ny-Math.sin(a)*o[0];
+    sum+=Math.exp(-(dx*dx+dy*dy)/(o[3]*o[3]))}
+   return .25+.8*Math.min(1,sum)}
+  return .6+.13*Math.sin(t*1.05-d*2.3)};
+
+ function draw(t,amp,s){ctx.clearRect(0,0,size,size);
+  for(let iy=0;iy<GRID;iy++)for(let ix=0;ix<GRID;ix++){
+   const nx=(ix-half)/half,ny=(iy-half)/half,d=Math.hypot(nx,ny);
+   // 1.12 rather than the square's 1.41 corner is what rounds the silhouette.
+   if(d>1.12)continue;
+   let v=0;for(const k in weights)if(weights[k]>=.001)v+=weights[k]*heat(k,d,nx,ny,t,amp);
+   const r=rmax*Math.exp(-d*d*1.7)*Math.min(1,Math.max(0,v))*s;
+   // Under half a device pixel a dot renders as haze rather than a dot.
+   if(r*dpr<.5)continue;
+   ctx.beginPath();ctx.arc(mid+(ix-half)*gap*s,mid+(iy-half)*gap*s,r,0,Math.PI*2);ctx.fill()}}
+
+ function tick(now){const dt=Math.min((now-(last||now))/1000,.05);last=now;clock+=dt;
+  // Per-state weights, so interrupting a change blends from what is on screen
+  // rather than restarting.
+  const blend=1-Math.pow(1-.16,dt*60);
+  for(const k in weights)weights[k]+=((k===mode?1:0)-weights[k])*blend;
+  vel+=(-180*(scale-REST[mode])-26*vel)*dt;scale+=vel*dt;
+  draw(clock,level(clock),scale);frame=requestAnimationFrame(tick)}
+
+ function still(){cancelAnimationFrame(frame);frame=0;
+  for(const k in weights)weights[k]=k===mode?1:0;draw(0,level(0),REST[mode])}
+ function sync(){if(reduced.matches||document.hidden){still();return}if(!frame){last=0;frame=requestAnimationFrame(tick)}}
+ for(const tab of tabs)tab.addEventListener('click',()=>{mode=tab.dataset.orb;
+  tabs.forEach(t=>t.setAttribute('aria-pressed',String(t===tab)));
+  readout.textContent=tab.textContent;sync()});
+ document.addEventListener('visibilitychange',sync);reduced.addEventListener('change',sync);
+ new IntersectionObserver(e=>{e[0].isIntersecting?sync():(cancelAnimationFrame(frame),frame=0)},{threshold:.15}).observe(root);
+ sync();
+}
+function wireOdometer(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const row=root.querySelector('.odometer-value'),status=root.querySelector('[role=status]');
+ const start=+root.dataset.value||0;let value=start,shape='';
+ const face=n=>{const s=document.createElement('span');s.className='odo-face';s.textContent=n;return s};
+ const mod=(n,m)=>((n%m)+m)%m;
+
+ function build(text){row.replaceChildren();shape='';
+  for(const ch of text){
+   if(ch>='0'&&ch<='9'){shape+='d';
+    const place=document.createElement('span');place.className='odo-place';
+    const reel=document.createElement('span');reel.className='odo-reel';
+    reel.append(face(ch));place.append(reel);place.dataset.digit=ch;row.append(place)}
+   else{shape+='m';const mark=document.createElement('span');mark.className='odo-mark';mark.textContent=ch;row.append(mark)}}}
+
+ // Rebuild the reel as the exact run of faces between here and there, so the
+ // column always travels the real distance instead of snapping or unwinding
+ // the long way round.
+ function roll(place,to,dir){const from=+place.dataset.digit;
+  const steps=dir>=0?mod(to-from,10):mod(from-to,10);
+  place.dataset.digit=to;
+  if(!steps)return;
+  const seq=[];for(let i=0;i<=steps;i++)seq.push(dir>=0?mod(from+i,10):mod(from-i,10));
+  const reel=place.firstElementChild;
+  reel.replaceChildren(...(dir>=0?seq:seq.slice().reverse()).map(face));
+  const at=dir>=0?0:-steps*1.5,to_=dir>=0?-steps*1.5:0;
+  reel.style.transition='none';reel.style.transform='translateY('+at+'em)';
+  void reel.offsetHeight;
+  reel.style.transition=reduced.matches?'none':'';
+  reel.style.transform='translateY('+to_+'em)'}
+
+ function show(next){const text=next.toLocaleString('en-US');
+  const pattern=[...text].map(c=>c>='0'&&c<='9'?'d':'m').join('');
+  const dir=next>=value?1:-1;value=next;status.textContent=text;
+  // A place appearing or disappearing changes the row, so rebuild rather than
+  // roll columns that no longer line up.
+  if(pattern!==shape){build(text);return}
+  const places=[...row.querySelectorAll('.odo-place')];let i=0;
+  for(const ch of text)if(ch>='0'&&ch<='9')roll(places[i++],+ch,dir)}
+
+ build(start.toLocaleString('en-US'));
+ root.querySelector('[data-odo=step]').addEventListener('click',()=>show(value+37));
+ root.querySelector('[data-odo=random]').addEventListener('click',()=>show(Math.floor(Math.random()*99999)));
+ root.querySelector('[data-odo=reset]').addEventListener('click',()=>show(start));
+}
+const confirmTile=document.querySelector('#confirm-demo'),orb=document.querySelector('#orb-demo'),odometer=document.querySelector('#odometer-demo');
+const confirmHTML=confirmTile.outerHTML,orbHTML=orb.outerHTML,odometerHTML=odometer.outerHTML;
+wireConfirm(confirmTile);wireOrb(orb);wireOdometer(odometer);
+Object.assign(prototypes,{
+confirm:{title:'Delete, then mean it',html:confirmHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line','--amber','--sky')+cssFor(/^\.confirm/)+'.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}',js:wireConfirm.toString()+";wireConfirm(document.querySelector('.confirm'));"},
+orb:{title:'Signal orb',html:orbHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line','--amber')+cssFor(/^\.orb/),js:wireOrb.toString()+";wireOrb(document.querySelector('.orb'));"},
+odometer:{title:'Odometer',html:odometerHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line')+cssFor(/^\.odo/)+'.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}',js:wireOdometer.toString()+";wireOdometer(document.querySelector('.odometer'));"}});
