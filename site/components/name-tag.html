@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Name tag</title><style>body{margin:0;min-height:100vh;display:grid;place-content:center;gap:20px;background:#fcfdfd;font:16px system-ui}name-tag{width:300px}pixel-loader{width:min(360px,85vw)}input,button{font:inherit;padding:12px;border:1px solid #bccdd9;border-radius:8px}</style><name-tag for="name"></name-tag><label for="name">Your name</label><input id="name" autocomplete="name" maxlength="100" value="Kyler"><script>(()=>{/*!
+ * <name-tag> - a HELLO MY NAME IS badge that fills in as you type.
+ * Dependency-free custom element. MIT.
+ *
+ * <name-tag for="your-input"></name-tag>
+ * <name-tag value="Ada Lovelace"></name-tag>
+ *
+ * The interesting part is fitting the name to the badge. A name is shown as
+ * first name plus last initial ("Ada L.") whenever there is a last name -
+ * always, not only on overflow, so the tag never flashes the full name first.
+ * If that still overruns the writing line the type shrinks to fit, and only
+ * once it hits the minimum size does it truncate, keeping the last initial.
+ */
+const MAX_W = 116;     // usable width of the writing line, in viewBox units
+const BASE = 22;       // type size when the name fits outright
+const MIN = 10;        // never shrink past this; truncate instead
+
+const TEMPLATE = `
+<style>
+  :host { display: block; }
+  svg { width: 100%; height: auto; display: block; }
+  .card   { fill: #fff; stroke: #1c1a19; stroke-width: 2.4;
+            stroke-linejoin: round; }
+  .banner { fill: var(--name-tag-color, #247ab6); }
+  .rule   { fill: none; stroke: #1c1a19; stroke-width: 2;
+            stroke-linecap: round; }
+  .shadow { fill: rgba(28,26,25,.09); }
+  text    { font-family: var(--name-tag-font, ui-sans-serif, system-ui,
+            -apple-system, "Segoe UI", Helvetica, Arial, sans-serif); }
+  .hello  { fill: #fff; font-weight: 800; font-size: 26px;
+            letter-spacing: .04em; }
+  .sub    { fill: #6c6663; font-size: 11px; letter-spacing: .12em; }
+  .name   { fill: #1c1a19; font-weight: 600; font-size: ${BASE}px; }
+  /* Deliberately no transition on .name: getComputedTextLength reports the
+     mid-animation size, so a transition makes each measurement race the last
+     one and the fit converges on the wrong number. */
+</style>
+<svg viewBox="0 0 300 230" role="img" part="svg">
+  <title>Hello, my name is</title>
+  <ellipse class="shadow" cx="150" cy="208" rx="92" ry="8"/>
+  <g transform="rotate(-4 150 120)">
+    <rect class="card" x="58" y="48" width="184" height="142" rx="14"/>
+    <path class="banner" d="M58 62a14 14 0 0 1 14-14h156a14 14 0 0 1 14 14v34H58z"/>
+    <text class="hello" x="150" y="86" text-anchor="middle">HELLO</text>
+    <text class="sub" x="150" y="124" text-anchor="middle">MY NAME IS</text>
+    <path class="rule" d="M84 168h132"/>
+    <text class="name" x="92" y="160"></text>
+  </g>
+</svg>`;
+
+class NameTag extends HTMLElement {
+  static observedAttributes = ['value', 'for'];
+
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' }).innerHTML = TEMPLATE;
+    this._text = this.shadowRoot.querySelector('.name');
+    this._onInput = e => { this.value = e.target.value; };
+  }
+
+  connectedCallback() { this._bind(); this._render(); document.fonts?.ready.then(() => { if(this.isConnected)this._render(); }); }
+  disconnectedCallback() { this._unbind(); }
+
+  attributeChangedCallback(name) {
+    if(name === 'value') this._value = undefined;
+    if (name === 'for') this._bind();
+    this._render();
+  }
+
+  get value() { return this._value ?? this.getAttribute('value') ?? ''; }
+  set value(v) { this._value = String(v ?? ''); this._render(); }
+
+  _bind() {
+    this._unbind();
+    const id = this.getAttribute('for');
+    if (!id) return;
+    const root = this.getRootNode();
+    this._input = root.getElementById ? root.getElementById(id)
+                                      : document.getElementById(id);
+    if (!this._input) return;
+    this._input.addEventListener('input', this._onInput);
+    this.value = this._input.value;
+  }
+  _unbind() {
+    if (this._input) this._input.removeEventListener('input', this._onInput);
+    this._input = null;
+  }
+
+  /* Measure by writing into the live <text> node: getComputedTextLength is the
+     only honest answer for the font that actually rendered. This runs inside
+     the input event, so it lands before the browser paints the keystroke. */
+  _measure(str, px) {
+    this._text.textContent = str;
+    this._text.style.fontSize = px ? `${px}px` : '';
+    try { return this._text.getComputedTextLength(); } catch { return 0; }
+  }
+
+  _render() {
+    if (!this.isConnected) return;
+    const words = this.value.trim().split(/\s+/).filter(Boolean);
+    const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s);
+    const first = cap(words[0] ?? '');
+    const initial = words.length >= 2
+      ? `${words[words.length - 1][0].toUpperCase()}.` : '';
+    const tail = initial ? ` ${initial}` : '';
+    const shown = first + tail;
+    this.shadowRoot.querySelector('title').textContent = shown ? `Hello, my name is ${this.value}` : 'Hello, my name is';
+
+    if (this._measure(shown) <= MAX_W) return;
+
+    /* Step in tenths of a pixel. Whole pixels make a name that wanted 10.9px
+       drop all the way to 10px, which is a visible lurch at this size. Floor
+       rather than round so the estimate errs narrow. */
+    const fitted = Math.floor((BASE * MAX_W / this._measure(shown)) * 10) / 10;
+    if (fitted >= MIN) { this._measure(shown, fitted); return; }
+
+    if (this._measure(shown, MIN) <= MAX_W) return;
+    let stem = first;
+    while (stem.length) {
+      stem = Array.from(stem).slice(0, -1).join('');
+      if (this._measure(`${stem}…${tail}`, MIN) <= MAX_W) return;
+    }
+    this._measure(`…${tail}`, MIN);
+  }
+}
+
+if (!customElements.get('name-tag')) customElements.define('name-tag', NameTag);
+})();</script></html>

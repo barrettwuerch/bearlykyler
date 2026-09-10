@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Closing door — Bearly Kyler</title><style>body{margin:0;background:#fcfdfd;min-height:100vh;display:grid;place-content:center;font:16px system-ui}.door-scene{max-width:320px}button{font:inherit;padding:12px 20px;border:1px solid #247ab6;border-radius:24px;background:white;color:#247ab6;cursor:pointer}button:focus-visible{outline:3px solid #48a8ee;outline-offset:4px}</style><!-- A line-art house whose door swings shut, on demand. No JavaScript.
+     MIT. Theme it with the custom properties on .door-scene. -->
+<svg class="door-scene" viewBox="0 0 240 200" role="img"
+     aria-label="A house with its front door swinging closed">
+  <ellipse class="shade" cx="120" cy="174" rx="78" ry="7"/>
+
+  <!-- chimney smoke, drawn faint so the house line stays dominant -->
+  <path class="faint" d="M172 40q7-9 0-16t0-14"/>
+
+  <path class="line" d="M20 170h200"/>
+  <path class="line" d="M40 96l80-56 80 56"/>
+  <path class="line" d="M164 62V44h13v27"/>
+  <path class="line" d="M56 170V96h128v74"/>
+
+  <circle class="line" cx="88" cy="124" r="16"/>
+  <path class="line" d="M72 124h32M88 108v32"/>
+
+  <!-- the doorway is a hole in the wall; the door is a separate panel -->
+  <path class="line" d="M130 170v-46h32v46"/>
+
+  <g class="door">
+    <rect class="panel" x="132" y="126" width="28" height="44" rx="1.5"/>
+    <circle class="handle" cx="154" cy="148" r="2.4"/>
+  </g>
+</svg>
+
+<style>
+  .door-scene {
+    --door-line: #1d2321;      /* the drawing */
+    --door-faint: #9aa8a1;     /* smoke, and anything secondary */
+    --door-shade: #e8ede9;     /* the ground shadow */
+    --door-fill: #247ab6;      /* the door itself */
+    --door-handle: #ffffff;
+    --door-speed: 3.8s;
+    width: 100%; height: auto; display: block;
+  }
+  .door-scene .line {
+    fill: none; stroke: var(--door-line); stroke-width: 2.4;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .door-scene .faint {
+    fill: none; stroke: var(--door-faint); stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .door-scene .shade { fill: var(--door-shade); }
+  .door-scene .panel { fill: var(--door-fill); }
+  .door-scene .handle { fill: var(--door-handle); }
+
+  /* The hinge. transform-box: fill-box makes the origin resolve against the
+     group's own bounding box rather than the whole SVG viewport, so
+     "left center" lands exactly on the hinge edge. Squashing horizontally is
+     what a door swinging away from you actually does in projection - no 3D
+     transform, no perspective, and it stays crisp at any size.
+
+     Panel and handle are transformed together as one group. Animating them
+     separately looks right only while the door is fully open: they scale from
+     their own left edges, so the handle drifts across the panel as it closes. */
+  .door-scene .door {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: door-close var(--door-speed) cubic-bezier(.4, 0, .2, 1) 1 both;
+  }
+  @keyframes door-close {
+    0%   { transform: scaleX(.06); }   /* open, seen edge-on */
+    38%  { transform: scaleX(1); }     /* shut */
+    88%  { transform: scaleX(1); }     /* held, so the beat reads */
+    100% { transform: scaleX(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .door-scene .door { animation: none; transform: scaleX(1); }
+  }
+</style>
+<button id="play">Close the door again</button><script>document.querySelector("#play").onclick=()=>{const d=document.querySelector(".door");d.style.animation="none";void d.getBoundingClientRect();d.style.animation=""};</script></html>
