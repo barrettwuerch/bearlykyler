@@ -16,3 +16,77 @@ document.querySelectorAll('[data-source]').forEach(button=>button.addEventListen
 document.querySelector('#close-source').addEventListener('click',()=>dialog.close());
 document.querySelector('#copy-code').addEventListener('click',async e=>{try{await navigator.clipboard.writeText(selectedCode);e.target.textContent='Copied'}catch{e.target.textContent='Use Download HTML'}});
 document.querySelector('#download-code').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([selectedCode],{type:'text/html'}));const a=document.createElement('a');a.href=url;a.download=selectedName+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+
+/* Expandable action bar and status island. Behaviour adapted from the
+   beui.dev ExpandableActionBar and DynamicIsland snippets supplied by the
+   site owner; vanilla builds for this site. */
+function wireActionBar(bar){const reduced=matchMedia('(prefers-reduced-motion: reduce)');const buttons=[...bar.querySelectorAll('button')];
+ const glow=document.createElement('span');glow.className='ab-glow';glow.setAttribute('aria-hidden','true');bar.prepend(glow);
+ let timer=0,armed=false,lastType='mouse',wasOpen=false;
+ const open=()=>{clearTimeout(timer);bar.classList.add('open')};
+ const lift=()=>{glow.style.opacity='0'};
+ const close=()=>{clearTimeout(timer);timer=setTimeout(()=>{bar.classList.remove('open');armed=false;lift()},90)};
+ const move=b=>{glow.style.width=b.offsetWidth+'px';glow.style.transform='translateX('+b.offsetLeft+'px)';glow.style.opacity='1'};
+ const select=b=>buttons.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+ // Pointer events rather than mouseenter/mouseleave: a tap fires compatibility
+ // mouse events carrying no pointerType, and the bar growing under a still
+ // finger fired the leave before the click landed — one tap opened, closed and
+ // ran nothing.
+ bar.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')open()});
+ bar.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch'){lift();close()}});
+ bar.addEventListener('focusin',open);
+ bar.addEventListener('focusout',e=>{if(!bar.contains(e.relatedTarget))close()});
+ for(const b of buttons){
+  b.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'){clearTimeout(timer);move(b)}});
+  b.addEventListener('focus',()=>{open();move(b)});
+  b.addEventListener('pointerdown',e=>{lastType=e.pointerType;wasOpen=bar.classList.contains('open')});
+  // Nothing reveals the labels to a finger, so the first tap opens the bar and
+  // the next one acts. Read from the state at pointerdown: a browser that
+  // focuses the button on contact opens the bar mid-tap, and that first tap
+  // would otherwise fire the action it was meant to reveal.
+  b.addEventListener('click',()=>{
+   if(lastType!=='mouse'&&!wasOpen&&!armed){armed=true;open();move(b);return}
+   select(b);move(b);
+  });
+ }
+ // A finger never hovers, so a bar a tap opened has nothing to close it.
+ document.addEventListener('pointerdown',e=>{if(armed&&!bar.contains(e.target))close()});
+ reduced.addEventListener('change',()=>{if(reduced.matches)lift()});
+}
+function wireIsland(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const shell=root.querySelector('.island-shell'),sizer=root.querySelector('.island-sizer');
+ const slots=[...sizer.querySelectorAll('.island-slot')],tabs=[...root.querySelectorAll('[data-island-view]')];
+ let current=slots.find(s=>!s.hidden)||slots[0],timer=0;
+ // The shell owns explicit dimensions and springs toward the natural size of
+ // whatever slot is showing, so the slot is never scale-distorted.
+ const fit=()=>{shell.style.width=sizer.offsetWidth+'px';shell.style.height=sizer.offsetHeight+'px'};
+ function show(next){if(!next||next===current)return;clearTimeout(timer);
+  const swap=()=>{current.classList.remove('leaving');current.hidden=true;next.hidden=false;current=next;
+   next.classList.remove('enter');void next.offsetWidth;if(!reduced.matches)next.classList.add('enter');fit()};
+  if(reduced.matches){swap();return}
+  current.classList.add('leaving');timer=setTimeout(swap,80);
+ }
+ for(const tab of tabs)tab.addEventListener('click',()=>{tabs.forEach(t=>t.setAttribute('aria-pressed',String(t===tab)));
+  show(slots.find(s=>s.dataset.view===tab.dataset.islandView))});
+ new ResizeObserver(fit).observe(sizer);fit();
+}
+const bar=document.querySelector('#action-bar-demo'),island=document.querySelector('#island-demo');
+// Snapshot the authored markup before wiring: the bar injects its highlight
+// span and the island writes inline dimensions, neither of which belongs in
+// an exported copy that wires itself up again.
+const barHTML=bar.outerHTML,islandHTML=island.outerHTML;
+wireActionBar(bar);wireIsland(island);
+
+/* Lift each prototype's rules straight out of the live stylesheet, so the
+   exported file cannot drift from what the page is actually showing. */
+function cssFor(test){const out=[];for(const sheet of document.styleSheets){let rules;try{rules=sheet.cssRules}catch{continue}
+ for(const rule of rules){
+  if(rule.selectorText&&test.test(rule.selectorText)){out.push(rule.cssText);continue}
+  if(rule.name&&test.test(rule.name)){out.push(rule.cssText);continue}
+  if(rule.media&&rule.cssRules){const inner=[...rule.cssRules].filter(r=>r.selectorText&&test.test(r.selectorText));
+   if(inner.length)out.push('@media '+rule.conditionText+'{'+inner.map(r=>r.cssText).join('')+'}')}
+ }}return out.join('')}
+Object.assign(prototypes,{
+metallic:{title:'Metallic button',html:document.querySelector('#metallic-demo').outerHTML,css:'*{box-sizing:border-box}:root{--paper:#faf9f6;--ink:#292823}'+cssFor(/^\.metallic|^metal-drift$/),js:''},
+'action-bar':{title:'Expandable action bar',html:barHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823;--amber:#b77637}'+cssFor(/^\.(action-bar|ab-)/),js:wireActionBar.toString()+";wireActionBar(document.querySelector('.action-bar'));"},
+island:{title:'Status island',html:islandHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823}'+cssFor(/^\.island|^island-in$/),js:wireIsland.toString()+";wireIsland(document.querySelector('.island'));"}});
