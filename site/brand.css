@@ -43,3 +43,11 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 
 
 @media(prefers-reduced-motion:reduce){.card .preview{transform:none!important}.card-glare{display:none}}@media(max-width:600px){.header{gap:8px}}
+
+/* Scramble reveal: the sizer holds the final text's box so the line never
+   reflows while wider glyphs churn over it. */
+.scramble{position:relative;display:inline-block;white-space:pre}
+.scramble-size{visibility:hidden}
+.scramble-ink{position:absolute;left:0;top:0;white-space:pre}
+.scramble-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.scramble-ink{display:none}.scramble-size{visibility:visible}}
