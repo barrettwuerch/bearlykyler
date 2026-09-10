@@ -17,15 +17,20 @@ no Python, Node, React, database, API keys, or build step.
 
 ## Deployment
 
-Cloudflare builds the site from the `main` branch, so a push to `main` publishes.
-There is no build command.
+The site is a static-assets-only Cloudflare Worker. Cloudflare builds from the
+`main` branch, so a push to `main` publishes. There is no build step.
 
-**The web root is `site/`, not the repository root.** A host pointed at the root
-serves this documentation instead of the website; `index.html` lives at
-`site/index.html`.
+**The web root is `site/`, not the repository root.** `index.html` lives at
+`site/index.html`; `GUIDE.md`, `source/` and `serve.py` are documentation and
+tooling and are never served.
 
-The build configuration lives in the Cloudflare dashboard rather than in this
-repository.
+`wrangler.jsonc` holds the deploy configuration. Its `name` must keep matching
+the Worker in the Cloudflare dashboard, or a deploy will target a different
+Worker. Validate changes to it before pushing:
+
+```
+npx wrangler deploy --dry-run
+```
 
 ## What is here
 
