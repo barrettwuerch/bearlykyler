@@ -118,7 +118,7 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 
 /* Marquee. The track is duplicated so the loop closes on itself; both copies
    travel one full track width and restart together. */
-.marquee{position:relative;display:flex;width:100%;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent);mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent)}
+.marquee{position:relative;display:flex;width:100%;min-width:0;contain:inline-size;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent);mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent)}
 .marquee-track{display:flex;flex:none;align-items:center;gap:30px;padding-right:30px;animation:marquee-run 19s linear infinite}
 .marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
 .marquee-item{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font:700 14px Nunito,Arial,sans-serif;color:var(--muted)}
@@ -136,3 +136,18 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
  .reveal-armed{opacity:1;transform:none;transition:none}
  .marquee-track{animation:none}
 }
+
+/* Card actions. Selectors carry three classes deliberately: the earlier
+   `.card-info button.text-link` rule would otherwise win on specificity and
+   strip the chip back to a bare link. */
+.card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:13px}
+.card-info .card-actions .text-link{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:700 12px Nunito,Arial,sans-serif;letter-spacing:.2px;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background .22s,border-color .22s,color .22s,transform .12s}
+.card-info .card-actions .text-link:hover{background:var(--ink);border-color:var(--ink);color:var(--paper);text-decoration:none}
+.card-info .card-actions .text-link:active{transform:translateY(1px)}
+.card-info .card-actions .text-link:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+/* The first action is the one people want; it leads, the rest support. */
+.card-info .card-actions .text-link:first-child{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.card-info .card-actions .text-link:first-child:hover{background:var(--amber);border-color:var(--amber)}
+.card-actions .arrow{display:inline-block;transition:transform .26s cubic-bezier(.32,.72,0,1)}
+.card-info .card-actions .text-link:hover .arrow{transform:translate(2px,-2px)}
+@media(prefers-reduced-motion:reduce){.card-info .card-actions .text-link,.card-actions .arrow{transition:none}}

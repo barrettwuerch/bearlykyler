@@ -79,6 +79,10 @@ wireActionBar(bar);wireIsland(island);
 
 /* Lift each prototype's rules straight out of the live stylesheet, so the
    exported file cannot drift from what the page is actually showing. */
+/* Two :root blocks exist and the later one wins, so hardcoding palette values
+   into an export ships the dead one. Read what the page is actually using. */
+function varsFor(...names){const style=getComputedStyle(document.documentElement);
+ return ':root{'+names.map(n=>n+':'+style.getPropertyValue(n).trim()).join(';')+'}'}
 function cssFor(test){const out=[];for(const sheet of document.styleSheets){let rules;try{rules=sheet.cssRules}catch{continue}
  for(const rule of rules){
   if(rule.selectorText&&test.test(rule.selectorText)){out.push(rule.cssText);continue}
@@ -87,9 +91,9 @@ function cssFor(test){const out=[];for(const sheet of document.styleSheets){let 
    if(inner.length)out.push('@media '+rule.conditionText+'{'+inner.map(r=>r.cssText).join('')+'}')}
  }}return out.join('')}
 Object.assign(prototypes,{
-metallic:{title:'Metallic button',html:document.querySelector('#metallic-demo').outerHTML,css:'*{box-sizing:border-box}:root{--paper:#faf9f6;--ink:#292823}'+cssFor(/^\.metallic|^metal-drift$/),js:''},
-'action-bar':{title:'Expandable action bar',html:barHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823;--amber:#b77637}'+cssFor(/^\.(action-bar|ab-)/),js:wireActionBar.toString()+";wireActionBar(document.querySelector('.action-bar'));"},
-island:{title:'Status island',html:islandHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823}'+cssFor(/^\.island|^island-in$/),js:wireIsland.toString()+";wireIsland(document.querySelector('.island'));"}});
+metallic:{title:'Metallic button',html:document.querySelector('#metallic-demo').outerHTML,css:'*{box-sizing:border-box}'+varsFor('--paper','--ink')+cssFor(/^\.metallic|^metal-drift$/),js:''},
+'action-bar':{title:'Expandable action bar',html:barHTML,css:'*{box-sizing:border-box}'+varsFor('--line','--muted','--ink','--amber')+cssFor(/^\.(action-bar|ab-)/),js:wireActionBar.toString()+";wireActionBar(document.querySelector('.action-bar'));"},
+island:{title:'Status island',html:islandHTML,css:'*{box-sizing:border-box}'+varsFor('--line','--muted','--ink')+cssFor(/^\.island|^island-in$/),js:wireIsland.toString()+";wireIsland(document.querySelector('.island'));"}});
 
 /* Magnetic button, marquee and count-up. Vanilla builds for this site. */
 function wireMagnetic(button){const reduced=matchMedia('(prefers-reduced-motion: reduce)'),hover=matchMedia('(hover: hover) and (pointer: fine)');
@@ -138,6 +142,6 @@ const magnet=document.querySelector('#magnetic-demo'),marquee=document.querySele
 const magnetHTML=magnet.outerHTML,marqueeHTML=marquee.outerHTML,counterHTML=counter.outerHTML;
 wireMagnetic(magnet);wireMarquee(marquee);wireCount(counter);
 Object.assign(prototypes,{
-magnetic:{title:'Magnetic button',html:magnetHTML,css:'*{box-sizing:border-box}:root{--ink:#292823;--paper:#faf9f6;--amber:#b77637}'+cssFor(/^\.magnetic/),js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
-marquee:{title:'Marquee',html:marqueeHTML,css:'*{box-sizing:border-box}:root{--muted:#77736b;--amber:#b77637}body{display:block!important;padding:40px 0}'+cssFor(/^\.marquee|^marquee-run$/),js:wireMarquee.toString()+";wireMarquee(document.querySelector('.marquee'));"},
-counter:{title:'Count up',html:counterHTML,css:'*{box-sizing:border-box}:root{--ink:#292823;--muted:#77736b}'+cssFor(/^\.counter/),js:wireCount.toString()+";wireCount(document.querySelector('.counter'));"}});
+magnetic:{title:'Magnetic button',html:magnetHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--amber')+cssFor(/^\.magnetic/),js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
+marquee:{title:'Marquee',html:marqueeHTML,css:'*{box-sizing:border-box}body{display:block!important;padding:40px 0}'+varsFor('--muted','--amber')+cssFor(/^\.marquee|^marquee-run$/),js:wireMarquee.toString()+";wireMarquee(document.querySelector('.marquee'));"},
+counter:{title:'Count up',html:counterHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--muted')+cssFor(/^\.counter/),js:wireCount.toString()+";wireCount(document.querySelector('.counter'));"}});
