@@ -1,0 +1,17 @@
+# Normalize line endings in the repo; check out LF everywhere.
+# The tree is already LF-only, so this changes no existing file.
+* text=auto eol=lf
+
+# Binary assets: never diff, never munge.
+*.png  binary
+*.webp binary
+*.mp4  binary
+*.glb  binary
+*.ttf  binary
+
+# Large generated/vendored sources. Suppressing their diffs keeps pull
+# requests reviewable; they are still versioned normally.
+site/components/bear-wave.html -diff linguist-generated
+source/animation-source.js     -diff linguist-generated
+site/bear-lab/three.module.js  -diff linguist-vendored
+site/bear-lab/bear.json        -diff linguist-generated
