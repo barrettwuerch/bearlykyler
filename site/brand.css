@@ -139,15 +139,35 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 
 /* Card actions. Selectors carry three classes deliberately: the earlier
    `.card-info button.text-link` rule would otherwise win on specificity and
-   strip the chip back to a bare link. */
-.card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:13px}
-.card-info .card-actions .text-link{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font:700 12px Nunito,Arial,sans-serif;letter-spacing:.2px;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background .22s,border-color .22s,color .22s,transform .12s}
-.card-info .card-actions .text-link:hover{background:var(--ink);border-color:var(--ink);color:var(--paper);text-decoration:none}
-.card-info .card-actions .text-link:active{transform:translateY(1px)}
+   strip the chip back to a bare link.
+
+   Elevation does the work that a heavy fill used to. Every action sits on the
+   same white surface and is separated by shadow depth and label colour, not
+   by one of them being a black slab. */
+.card-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:15px}
+.card-info .card-actions .text-link{
+ display:inline-flex;align-items:center;gap:8px;padding:9px 17px;
+ border:0;border-radius:999px;background:#fff;
+ color:var(--muted);font:600 12.5px Nunito,Arial,sans-serif;letter-spacing:.15px;line-height:1;
+ white-space:nowrap;text-decoration:none;cursor:pointer;
+ /* Hairline as an inset ring rather than a border, so it tucks under the
+    shadow instead of drawing a hard edge on top of it. */
+ box-shadow:0 1px 1px rgba(41,52,60,.04),0 3px 8px rgba(41,52,60,.06),inset 0 0 0 1px rgba(41,52,60,.07);
+ transition:box-shadow .26s cubic-bezier(.32,.72,0,1),transform .26s cubic-bezier(.32,.72,0,1),color .2s}
+.card-info .card-actions .text-link:hover{
+ color:var(--ink);transform:translateY(-2px);text-decoration:none;
+ box-shadow:0 2px 4px rgba(41,52,60,.06),0 10px 22px rgba(41,52,60,.11),inset 0 0 0 1px rgba(41,52,60,.1)}
+/* Pressed sits back down, and the shadow tightens rather than vanishing. */
+.card-info .card-actions .text-link:active{transform:translateY(0);
+ box-shadow:0 1px 2px rgba(41,52,60,.1),inset 0 0 0 1px rgba(41,52,60,.12)}
 .card-info .card-actions .text-link:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
-/* The first action is the one people want; it leads, the rest support. */
-.card-info .card-actions .text-link:first-child{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.card-info .card-actions .text-link:first-child:hover{background:var(--amber);border-color:var(--amber)}
-.card-actions .arrow{display:inline-block;transition:transform .26s cubic-bezier(.32,.72,0,1)}
-.card-info .card-actions .text-link:hover .arrow{transform:translate(2px,-2px)}
-@media(prefers-reduced-motion:reduce){.card-info .card-actions .text-link,.card-actions .arrow{transition:none}}
+/* The first action leads on colour and a little more lift, not on weight. */
+.card-info .card-actions .text-link:first-child{color:var(--amber);
+ box-shadow:0 1px 2px rgba(41,52,60,.05),0 5px 14px rgba(41,52,60,.09),inset 0 0 0 1px rgba(41,52,60,.08)}
+.card-info .card-actions .text-link:first-child:hover{color:var(--amber);
+ box-shadow:0 3px 6px rgba(41,52,60,.07),0 14px 28px rgba(41,52,60,.13),inset 0 0 0 1px rgba(41,52,60,.11)}
+.card-actions .arrow{display:inline-block;opacity:.5;transition:transform .26s cubic-bezier(.32,.72,0,1),opacity .2s}
+.card-info .card-actions .text-link:hover .arrow{opacity:1;transform:translate(2px,-2px)}
+@media(prefers-reduced-motion:reduce){
+ .card-info .card-actions .text-link,.card-actions .arrow{transition:none}
+ .card-info .card-actions .text-link:hover{transform:none}}
