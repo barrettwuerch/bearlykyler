@@ -224,3 +224,45 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 @media(prefers-reduced-motion:reduce){
  .confirm,.confirm-lid,.confirm-panel,.confirm-bin,.confirm-tick,.confirm-circle,.odo-reel{transition:none}
 }
+
+/* Folder and gooey nav. Adapted from the beui.dev Folder and GooeyNav
+   snippets supplied by the site owner; vanilla builds for this site. */
+
+/* Perspective lives on the parent so the flap tips away from the viewer
+   rather than merely squashing. */
+.folder{display:flex;align-items:flex-end;justify-content:center;padding-bottom:16px;perspective:820px}
+.folder-body{position:relative;width:170px;height:118px;padding:0;border:0;background:none;cursor:pointer}
+.folder-body:focus-visible{outline:2px solid var(--amber);outline-offset:6px}
+.folder-back{position:absolute;inset:0;z-index:0;border-radius:14px;background:var(--amber);box-shadow:inset 0 0 8px 2px rgba(255,255,255,.28)}
+/* The tab reads as part of the same panel, so it takes the same paint. */
+.folder-back::before{content:'';position:absolute;left:0;top:-13px;width:80px;height:22px;border-radius:11px 11px 0 0;background:inherit}
+.folder-card{position:absolute;left:50%;bottom:12px;z-index:1;width:74px;height:92px;margin-left:-37px;border-radius:9px;background:#fff;box-shadow:0 7px 16px rgba(41,52,60,.2);transition:transform .58s cubic-bezier(.32,.72,0,1)}
+.folder-card::after{content:'';position:absolute;left:9px;right:9px;top:12px;height:54px;border-radius:2px;background:repeating-linear-gradient(to bottom,var(--line) 0 4px,transparent 4px 11px)}
+.folder-card:nth-child(2){transform:translate(-30px,-5px) rotate(-7deg)}
+.folder-card:nth-child(3){transform:translate(0,-12px) rotate(2deg)}
+.folder-card:nth-child(4){transform:translate(30px,-5px) rotate(8deg)}
+.folder-body:hover .folder-card:nth-child(2){transform:translate(-38px,-24px) rotate(-11deg)}
+.folder-body:hover .folder-card:nth-child(3){transform:translate(0,-32px) rotate(1deg)}
+.folder-body:hover .folder-card:nth-child(4){transform:translate(38px,-24px) rotate(12deg)}
+.folder.open .folder-card:nth-child(2){transform:translate(-56px,-64px) rotate(-17deg)}
+.folder.open .folder-card:nth-child(3){transform:translate(0,-74px) rotate(3deg)}
+.folder.open .folder-card:nth-child(4){transform:translate(56px,-66px) rotate(16deg)}
+.folder-front{position:absolute;left:0;right:0;bottom:0;z-index:2;height:92px;border-radius:12px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transform-origin:bottom center;transform:rotateX(-14deg);transition:transform .6s cubic-bezier(.34,1.06,.64,1)}
+.folder-body:hover .folder-front{transform:rotateX(-44deg)}
+.folder.open .folder-front{transform:rotateX(-58deg)}
+
+/* Gooey nav. The filter runs on a backing layer only — over live text it
+   would blur the labels along with the shapes. */
+.goo{position:relative;display:inline-block}
+.goo-defs{position:absolute;width:0;height:0}
+.goo-track{position:absolute;inset:0;display:flex;align-items:center;gap:2px;filter:url(#goo-blend);pointer-events:none}
+.goo-seg{height:38px;border-radius:11px;background:#e4ebf2;transition:margin .46s cubic-bezier(.32,.72,0,1),background .3s}
+.goo-seg.on{background:var(--amber);margin:0 8px}
+.goo-labels{position:relative;display:flex;align-items:center;gap:2px}
+.goo-labels button{height:38px;padding:0 17px;border:0;background:none;font:600 13px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer;transition:color .3s,margin .46s cubic-bezier(.32,.72,0,1)}
+.goo-labels button[aria-pressed=true]{color:#fff;margin:0 8px}
+.goo-labels button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:11px}
+
+@media(prefers-reduced-motion:reduce){
+ .folder-card,.folder-front,.goo-seg,.goo-labels button{transition:none}
+}

@@ -268,3 +268,32 @@ Object.assign(prototypes,{
 confirm:{title:'Delete, then mean it',html:confirmHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line','--amber','--sky')+cssFor(/^\.confirm/)+'.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}',js:wireConfirm.toString()+";wireConfirm(document.querySelector('.confirm'));"},
 orb:{title:'Signal orb',html:orbHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line','--amber')+cssFor(/^\.orb/),js:wireOrb.toString()+";wireOrb(document.querySelector('.orb'));"},
 odometer:{title:'Odometer',html:odometerHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line')+cssFor(/^\.odo/)+'.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}',js:wireOdometer.toString()+";wireOdometer(document.querySelector('.odometer'));"}});
+
+/* Folder and gooey nav. Vanilla builds for this site. */
+function wireFolder(root){const body=root.querySelector('.folder-body');
+ const set=open=>{root.classList.toggle('open',open);body.setAttribute('aria-expanded',String(open))};
+ body.addEventListener('click',()=>set(!root.classList.contains('open')));
+ // Leaving the folder puts it away; hover already lifts the cards, so a
+ // half-open state left behind on exit reads as a bug.
+ body.addEventListener('pointerleave',()=>set(false));
+ body.addEventListener('focusout',e=>{if(!body.contains(e.relatedTarget))set(false)});
+}
+function wireGoo(root){const track=root.querySelector('.goo-track');
+ const labels=[...root.querySelectorAll('.goo-labels button')];
+ // The backing shapes mirror the labels rather than being authored twice, so
+ // a renamed section cannot leave the goo layer the wrong width.
+ const segs=labels.map(()=>{const s=document.createElement('span');s.className='goo-seg';track.append(s);return s});
+ const measure=()=>labels.forEach((label,i)=>{segs[i].style.width=label.offsetWidth+'px'});
+ const select=i=>{labels.forEach((label,n)=>{label.setAttribute('aria-pressed',String(n===i));segs[n].classList.toggle('on',n===i)});measure()};
+ labels.forEach((label,i)=>label.addEventListener('click',()=>select(i)));
+ new ResizeObserver(measure).observe(root);
+ select(labels.findIndex(l=>l.getAttribute('aria-pressed')==='true')||0);
+ // Web fonts land after first paint and change every label's width.
+ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);
+}
+const folder=document.querySelector('#folder-demo'),goo=document.querySelector('#goo-demo');
+const folderHTML=folder.outerHTML,gooHTML=goo.outerHTML;
+wireFolder(folder);wireGoo(goo);
+Object.assign(prototypes,{
+folder:{title:'Folder',html:folderHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--line','--ink')+cssFor(/^\.folder/),js:wireFolder.toString()+";wireFolder(document.querySelector('.folder'));"},
+goo:{title:'Gooey nav',html:gooHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink')+cssFor(/^\.goo/),js:wireGoo.toString()+";wireGoo(document.querySelector('.goo'));"}});
