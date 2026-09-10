@@ -1,0 +1,24 @@
+# OS cruft
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Python bytecode from serve.py
+__pycache__/
+*.py[cod]
+
+# Cloudflare / Node tooling, should it ever be added
+node_modules/
+.wrangler/
+dist/
+
+# Local secrets — never commit these
+.dev.vars
+.env
+.env.*
