@@ -43,3 +43,96 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 
 
 @media(prefers-reduced-motion:reduce){.card .preview{transform:none!important}.card-glare{display:none}}@media(max-width:600px){.header{gap:8px}}
+
+/* Scramble reveal: the sizer holds the final text's box so the line never
+   reflows while wider glyphs churn over it. */
+.scramble{position:relative;display:inline-block;white-space:pre}
+.scramble-size{visibility:hidden}
+.scramble-ink{position:absolute;left:0;top:0;white-space:pre}
+.scramble-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.scramble-ink{display:none}.scramble-size{visibility:visible}}
+
+/* Material, action bar and status island. Techniques adapted from the
+   beui.dev MetallicButton, ExpandableActionBar and DynamicIsland snippets
+   supplied by the site owner; vanilla builds for this site, in the same
+   spirit as the TiltCard adaptation in site-motion.js. */
+
+/* The rim drifts on its own; a sheen sweeps across it on hover. Only the
+   2px rim shows either — the face sits on top, so the chrome reads as an
+   edge rather than as a shiny slab. */
+.metallic{position:relative;isolation:isolate;overflow:hidden;border:0;padding:0;border-radius:10px;background:none;box-shadow:0 8px 22px rgba(0,0,0,.16);cursor:pointer}
+.metallic::before{content:'';position:absolute;inset:0;z-index:0;border-radius:inherit;background:linear-gradient(105deg,#111 0%,#737373 14%,#fafafa 26%,#525252 38%,#0a0a0a 50%,#a3a3a3 64%,#fff 75%,#404040 87%,#111 100%);background-size:230% 100%;animation:metal-drift 8s ease-in-out infinite}
+.metallic-sheen{position:absolute;top:0;bottom:0;left:-58%;width:52%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55) 48%,transparent);opacity:.55;filter:blur(3px);mix-blend-mode:screen;transform:skewX(-12deg);transition:transform 2.4s ease-in-out}
+.metallic:hover .metallic-sheen,.metallic:focus-visible .metallic-sheen{transform:translateX(330%) skewX(-12deg)}
+.metallic-face{position:relative;z-index:2;display:block;margin:2px;padding:12px 20px;border-radius:8px;background:var(--paper);color:var(--ink);font:700 13px Nunito,Arial,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.16);transition:background .2s,transform .12s}
+.metallic:hover .metallic-face{background:#f1efe9}
+.metallic:active .metallic-face{transform:scale(.985)}
+@keyframes metal-drift{0%,100%{background-position:0 50%}50%{background-position:26% 50%}}
+
+/* Icons only until the bar is asked for more. The labels grow from zero
+   width so the pill itself does the expanding. */
+.action-bar{position:relative;display:inline-flex;align-items:center;gap:4px;padding:6px;border:1px solid var(--line);border-radius:999px;background:#fffffff2;box-shadow:0 10px 30px rgba(41,40,35,.1)}
+.action-bar button{position:relative;z-index:1;display:inline-flex;align-items:center;height:34px;padding:0 10px;border:0;border-radius:999px;background:none;color:var(--muted);font:600 13px Nunito,Arial,sans-serif;cursor:pointer;transition:color .15s}
+.action-bar button:hover,.action-bar button:focus-visible{color:var(--ink)}
+.action-bar button[aria-pressed=true]{color:var(--amber)}
+.ab-icon{display:inline-flex;flex:none;width:18px;justify-content:center;font-size:15px}
+.ab-label{display:inline-block;max-width:0;margin-left:0;overflow:hidden;white-space:nowrap;opacity:0;filter:blur(3px);transition:max-width .34s cubic-bezier(.32,.72,0,1),margin-left .34s cubic-bezier(.32,.72,0,1),opacity .22s,filter .22s}
+.action-bar.open .ab-label{max-width:11ch;margin-left:7px;opacity:1;filter:blur(0)}
+.ab-glow{position:absolute;left:0;top:6px;z-index:0;height:34px;width:0;border-radius:999px;background:rgba(183,118,55,.13);opacity:0;pointer-events:none;transition:transform .32s cubic-bezier(.32,.72,0,1),width .32s cubic-bezier(.32,.72,0,1),opacity .2s}
+
+/* Constant radius, never animated: the browser clamps it to half the shell
+   height, so pill-to-panel falls out of the resize with no corner glitch. */
+.island{display:flex;flex-direction:column;align-items:center;gap:14px}
+.island-shell{position:relative;display:flex;justify-content:center;align-items:flex-start;width:126px;height:37px;overflow:hidden;border-radius:32px;background:#14130f;color:#faf9f6;box-shadow:0 16px 34px rgba(0,0,0,.34);transition:width .62s cubic-bezier(.32,.72,0,1),height .62s cubic-bezier(.32,.72,0,1)}
+.island-sizer{position:relative;width:max-content}
+.island-slot{display:flex;align-items:center;justify-content:center;gap:9px;transform-origin:top center;white-space:nowrap;font:600 12px Nunito,Arial,sans-serif}
+.island-slot[hidden]{display:none}
+.island-slot[data-view=pill]{min-width:126px;min-height:37px;padding:0 16px}
+.island-slot:not([data-view=pill]){padding:15px 22px}
+.island-dot{width:8px;height:8px;border-radius:50%;background:#b77637;flex:none}
+.island-slot.enter{animation:island-in .5s cubic-bezier(.32,.72,0,1)}
+/* Sucked back up into the pill, fast and blur-free, before the shrinking
+   shell can clip it. */
+.island-slot.leaving{opacity:0;transform:scale(.92) translateY(-6px);transition:opacity .08s ease-out,transform .08s ease-out}
+@keyframes island-in{from{opacity:0;transform:scale(.9) translateY(-8px);filter:blur(5px)}to{opacity:1;transform:none;filter:blur(0)}}
+.island-controls{display:flex;gap:6px}
+.island-controls button{border:1px solid var(--line);border-radius:999px;background:#fff;padding:5px 11px;font:600 11px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s}
+.island-controls button[aria-pressed=true]{color:var(--ink);border-color:var(--ink)}
+
+@media(prefers-reduced-motion:reduce){
+ .metallic::before{animation:none}.metallic-sheen{display:none}
+ .ab-label{filter:none;transition:none}.ab-glow{transition:opacity .2s}
+ .island-shell{transition:none}.island-slot.enter{animation:none}.island-slot.leaving{transition:none}
+}
+
+/* Scroll reveal. The armed state is applied by JS, never by the stylesheet,
+   so with scripting off nothing is ever left invisible. */
+.reveal-armed{opacity:0;transform:translateY(15px);transition:opacity .62s cubic-bezier(.32,.72,0,1),transform .62s cubic-bezier(.32,.72,0,1)}
+.reveal-armed.reveal-in{opacity:1;transform:none}
+
+/* Magnetic button: the shell leans toward the pointer and the label leans a
+   little further, so the face reads as sitting slightly proud of the pill. */
+.magnetic{display:inline-flex;align-items:center;justify-content:center;padding:15px 27px;border:0;border-radius:999px;background:var(--ink);color:var(--paper);font:700 13px Nunito,Arial,sans-serif;cursor:pointer}
+.magnetic-label{display:inline-block;pointer-events:none}
+.magnetic:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+
+/* Marquee. The track is duplicated so the loop closes on itself; both copies
+   travel one full track width and restart together. */
+.marquee{position:relative;display:flex;width:100%;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent);mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent)}
+.marquee-track{display:flex;flex:none;align-items:center;gap:30px;padding-right:30px;animation:marquee-run 19s linear infinite}
+.marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
+.marquee-item{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font:700 14px Nunito,Arial,sans-serif;color:var(--muted)}
+.marquee-item::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--amber);flex:none}
+@keyframes marquee-run{to{transform:translateX(-100%)}}
+
+/* Count up. Tabular figures keep each number the same width as it climbs, so
+   the row cannot twitch while it counts. */
+.counter{display:flex;gap:38px}
+.counter-stat{text-align:center}
+.counter-value{display:block;font:900 34px Nunito,Arial,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.counter-label{display:block;margin-top:5px;font:10px monospace;letter-spacing:1.5px;color:var(--muted)}
+
+@media(prefers-reduced-motion:reduce){
+ .reveal-armed{opacity:1;transform:none;transition:none}
+ .marquee-track{animation:none}
+}
