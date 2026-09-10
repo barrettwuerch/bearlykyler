@@ -1,0 +1,15 @@
+{
+  // Static-assets-only Worker: no server-side code, so there is no "main"
+  // entry point. Cloudflare Workers Builds runs `wrangler versions upload`
+  // against this file.
+  //
+  // "name" must match the existing Worker in the Cloudflare dashboard,
+  // otherwise a deploy targets a different Worker.
+  "name": "bearlykyler",
+  "compatibility_date": "2026-09-10",
+  "assets": {
+    // The web root is site/, not the repository root. GUIDE.md, source/ and
+    // serve.py are documentation and tooling; they are never served.
+    "directory": "./site"
+  }
+}
