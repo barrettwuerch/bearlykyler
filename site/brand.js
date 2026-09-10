@@ -297,3 +297,229 @@ wireFolder(folder);wireGoo(goo);
 Object.assign(prototypes,{
 folder:{title:'Folder',html:folderHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--line','--ink')+cssFor(/^\.folder/),js:wireFolder.toString()+";wireFolder(document.querySelector('.folder'));"},
 goo:{title:'Gooey nav',html:gooHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink')+cssFor(/^\.goo/),js:wireGoo.toString()+";wireGoo(document.querySelector('.goo'));"}});
+
+/* Gravity letters. A heightmap rather than pairwise collision: glyphs only
+   ever need to know how high the pile is beneath them, which stays cheap no
+   matter how many have landed. */
+function wireGravity(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const POOL='ABCDEFGHJKLMNPRSTUVWXYZ',COL=8,MAX=44,GRAVITY=1150,SLOPE=.34,LEAVE=340;
+ const bodies=[];let heights=[],frame=0,last=0,hold=0,pour=0,live=null;
+ const box=()=>({w:root.clientWidth||1,h:root.clientHeight||1});
+ const span=(x,w)=>{const from=Math.max(0,Math.floor(x/COL));
+  return [from,Math.min(heights.length-1,Math.max(from,Math.ceil((x+w)/COL)-1))]};
+ const topOf=(from,to)=>{if(from<0||to>=heights.length)return Infinity;let t=0;
+  for(let i=from;i<=to;i++)t=Math.max(t,heights[i]);return t};
+ const restY=(x,w,h)=>{const [a,b]=span(x,w);return box().h-topOf(a,b)-h};
+ const deposit=body=>{const [a,b]=span(body.x,body.w);
+  for(let i=a;i<=b;i++)heights[i]=Math.max(heights[i],box().h-body.y)};
+
+ // Walk downhill while a neighbouring column sits far enough below: this is
+ // what makes a pile spread instead of growing a single tower.
+ function settleX(x,w,h){const {w:width}=box();let at=Math.min(Math.max(x,0),Math.max(width-w,0));
+  const fall=h*SLOPE,step=Math.max(COL,Math.round(w/3));
+  for(let i=0;i<40;i++){const [a,b]=span(at,w),run=b-a+1,here=topOf(a,b);
+   const left=here-topOf(a-run,a-1),right=here-topOf(b+1,b+run);
+   let next=at;
+   if(left>fall&&right>fall)next=Math.random()<.5?at-step:at+step;
+   else if(left>fall&&left>=right)next=at-step;
+   else if(right>fall)next=at+step;
+   next=Math.min(Math.max(next,0),Math.max(width-w,0));
+   if(next===at)break;at=next}
+  return at}
+
+ // Tilt to the slope it lands on, so a glyph resting half on a neighbour
+ // leans rather than floating level.
+ function aim(body){const {h:height}=box();
+  body.targetX=settleX(body.x,body.w,body.h);
+  const [a,b]=span(body.targetX,body.w),mid=Math.ceil((a+b)/2);
+  const lean=b>a?(topOf(a,mid-1)-topOf(mid,b))/Math.max((b-a+1)/2*COL,1):0;
+  body.rest=Math.max(-16,Math.min(16,Math.atan(lean)*180/Math.PI+(Math.random()-.5)*7));
+  body.targetY=restY(body.targetX,body.w,body.h);
+  body.fromX=body.x;body.fromY=Math.min(body.y,body.targetY)}
+
+ const paint=body=>{body.el.style.transform='translate3d('+body.x.toFixed(1)+'px,'+body.y.toFixed(1)+'px,0) rotate('+body.rot.toFixed(1)+'deg)'};
+ function rebuild(){heights=new Array(Math.max(1,Math.ceil(box().w/COL))).fill(0);
+  for(const body of bodies.filter(b=>b.done).sort((x,y)=>y.y-x.y))deposit(body)}
+
+ function tick(now){const dt=Math.min((now-(last||now))/1000,1/30);last=now;let busy=false;
+  for(const body of bodies){if(body.done)continue;
+   body.vy+=GRAVITY*dt;body.y+=body.vy*dt;
+   const total=body.targetY-body.fromY,p=total>0?Math.min((body.y-body.fromY)/total,1):1;
+   // Drift across to the landing column as it falls, rather than teleporting.
+   body.x=body.fromX+(body.targetX-body.fromX)*p*(2-p);
+   body.rot=body.spin*(1-p*p*p)+body.rest*(p*p*p);
+   // Land against the pile as it is now, not as it was at spawn: anything
+   // still in the air would otherwise drop straight through whatever landed
+   // underneath it while it fell.
+   if(body.y>=restY(body.x,body.w,body.h)){
+    body.x=settleX(body.x,body.w,body.h);body.y=restY(body.x,body.w,body.h);body.rot=body.rest;
+    body.done=true;deposit(body);paint(body);
+    body.inner.animate?.([{transform:'scaleY(.82)'},{transform:'scaleY(1)'}],{duration:160,easing:'cubic-bezier(.215,.61,.355,1)'});
+    continue}
+   paint(body);busy=true}
+  frame=busy?requestAnimationFrame(tick):0}
+ const wake=()=>{if(!frame&&!reduced.matches){last=0;frame=requestAnimationFrame(tick)}};
+
+ function trim(){const alive=bodies.filter(b=>!b.leaving);
+  for(let i=0;i<alive.length-MAX;i++){const body=alive[i];body.leaving=true;body.el.style.opacity='0';
+   setTimeout(()=>{body.el.remove();bodies.splice(bodies.indexOf(body),1);rebuild()},LEAVE)}}
+
+ function drop(cx,cy){const {w,h}=box();if(!heights.length)rebuild();
+  const el=document.createElement('span');el.className='gravity-glyph';
+  const inner=document.createElement('span');inner.textContent=POOL[Math.random()*POOL.length|0];el.append(inner);
+  el.style.fontSize=Math.round(21*(.8+Math.random()*.5))+'px';root.append(el);
+  const body={el,inner,w:el.offsetWidth,h:el.offsetHeight,vy:0,rot:0,done:false};
+  body.x=Math.min(Math.max(cx-body.w/2,0),Math.max(w-body.w,0));body.y=cy-body.h/2;
+  body.spin=reduced.matches?0:(Math.random()-.5)*70;
+  aim(body);
+  if(reduced.matches){body.x=body.targetX;body.y=body.targetY;body.rot=body.rest;body.done=true;deposit(body)}
+  else{// start clear of the pile, and clear of anything still falling above it
+   let from=Math.min(body.y,body.targetY-22);
+   for(const other of bodies)if(!other.done&&other.targetX<body.targetX+body.w&&body.targetX<other.targetX+other.w)
+    from=Math.min(from,other.y-body.h-8);
+   body.y=body.fromY=from;body.rot=body.spin}
+  bodies.push(body);paint(body);root.classList.add('used');trim();wake()}
+
+ const at=e=>{const r=root.getBoundingClientRect();
+  return [Math.min(Math.max(e.clientX-r.left,0),r.width),Math.min(Math.max(e.clientY-r.top,0),r.height)]};
+ root.addEventListener('pointerdown',e=>{if(e.button)return;e.preventDefault();
+  root.setPointerCapture?.(e.pointerId);live=e.pointerId;const [x,y]=at(e);drop(x,y);
+  let px=x,py=y;
+  root.addEventListener('pointermove',function move(m){if(m.pointerId!==live)return;[px,py]=at(m);
+   root.__move=move},{passive:true});
+  hold=setTimeout(()=>{pour=setInterval(()=>drop(px+(Math.random()-.5)*16,py),120)},300)});
+ const stop=()=>{clearTimeout(hold);clearInterval(pour);pour=0;live=null};
+ for(const type of ['pointerup','pointercancel','pointerleave'])root.addEventListener(type,stop);
+ new ResizeObserver(()=>{rebuild()}).observe(root);
+ reduced.addEventListener('change',()=>{if(reduced.matches){cancelAnimationFrame(frame);frame=0}});
+ rebuild();
+}
+
+/* Grid reveal. The picture is arrived at rather than faded in: one cell
+   splits into two, over and over, each pair carrying the average colour of
+   the half it covers, so the image resolves out of its own blocks. */
+function wireReveal(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d');
+ const SIZE=canvas.width,LEAVES=130,SAMPLE=96,MORPH=.07,RUN=2700;
+ const dpr=Math.min(devicePixelRatio||1,2);
+ canvas.width=canvas.height=Math.round(SIZE*dpr);canvas.style.width=canvas.style.height=SIZE+'px';
+ ctx.scale(canvas.width/SIZE,canvas.height/SIZE);
+
+ const clamp01=n=>n>0?(n<1?n:1):0;
+ const mix=(a,b,t)=>a+(b-a)*t;
+ const ease=t=>1-Math.pow(1-t,3);
+ const smooth=(a,b,x)=>{const t=clamp01((x-a)/(b-a));return t*t*(3-2*t)};
+ const hash=(x,y)=>{const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)};
+ const cell=(x,y,w,h,parent)=>({x,y,w,h,parent,kids:null,r:228,g:234,b:241,tone:hash(x+3.1,y+1.7),detail:0,at:0});
+
+ const trunk=cell(0,0,1,1,null),branches=[];
+ {const leaves=[trunk];
+  while(leaves.length<LEAVES){
+   let pick=0,best=-1;
+   for(let i=0;i<leaves.length;i++){const c=leaves[i];
+    // Always split the biggest: that keeps cells near-square and makes the
+    // count climb one at a time. The jitter only separates equal areas.
+    const area=c.w*c.h*(1+.12*hash(c.x,c.y));
+    if(area>best){best=area;pick=i}}
+   const parent=leaves.splice(pick,1)[0],wide=parent.w>=parent.h,half=wide?parent.w/2:parent.h/2;
+   const a=wide?cell(parent.x,parent.y,half,parent.h,parent):cell(parent.x,parent.y,parent.w,half,parent);
+   const b=wide?cell(parent.x+half,parent.y,half,parent.h,parent):cell(parent.x,parent.y+half,parent.w,half,parent);
+   parent.kids=[a,b];branches.push(parent);leaves.push(a,b)}
+  branches.forEach((c,i)=>{c.at=.92*(i+1)/branches.length})}
+
+ let photo=null,measured=false;
+ const apply=(c,s)=>{const n=s.n||1;c.r=s.r/n;c.g=s.g/n;c.b=s.b/n;
+  // Luminance variance: how much is going on inside this cell.
+  c.detail=Math.max(0,s.q/n-(s.l/n)*(s.l/n))};
+ function gather(c){let s;
+  if(c.kids){const a=gather(c.kids[0]),b=gather(c.kids[1]);
+   s={n:a.n+b.n,r:a.r+b.r,g:a.g+b.g,b:a.b+b.b,l:a.l+b.l,q:a.q+b.q}}
+  else{s={n:0,r:0,g:0,b:0,l:0,q:0};
+   const data=gather.data,x0=Math.round(c.x*SAMPLE),y0=Math.round(c.y*SAMPLE);
+   const x1=Math.max(x0+1,Math.round((c.x+c.w)*SAMPLE)),y1=Math.max(y0+1,Math.round((c.y+c.h)*SAMPLE));
+   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=(y*SAMPLE+x)*4;
+    const r=data[i],g=data[i+1],b=data[i+2],l=.299*r+.587*g+.114*b;
+    s.n++;s.r+=r;s.g+=g;s.b+=b;s.l+=l;s.q+=l*l}}
+  apply(c,s);return s}
+
+ // Reuse the same time slots and only change the order, so busy areas resolve
+ // first while the pacing stays exactly as built. A cell can never be dealt a
+ // slot before its parent's.
+ function order(){const slots=branches.map(c=>c.at).sort((a,b)=>a-b);
+  const queue=branches.filter(c=>!c.parent);let next=0;
+  while(queue.length&&next<slots.length){let pick=0;
+   for(let i=1;i<queue.length;i++)if(queue[i].detail>queue[pick].detail)pick=i;
+   const c=queue.splice(pick,1)[0];c.at=slots[next++];
+   for(const kid of c.kids||[])if(kid.kids)queue.push(kid)}}
+
+ function cover(img){const s=Math.max(SIZE/img.naturalWidth,SIZE/img.naturalHeight);
+  const w=img.naturalWidth*s,h=img.naturalHeight*s;return [(SIZE-w)/2,(SIZE-h)/2,w,h]}
+
+ function paint(split){ctx.clearRect(0,0,SIZE,SIZE);
+  const tint=measured?smooth(.04,.5,split):0;
+  const soft=1-smooth(.34,.74,split),gutter=1.6*soft;
+  const shade=(tone,target)=>Math.round(mix(226+tone*14,target,tint));
+  const rounded=soft>.01&&typeof ctx.roundRect==='function';
+  const block=p=>{
+   // Snap to whole pixels so neighbours stay flush and no seam shows.
+   const x=Math.round(p.x),y=Math.round(p.y),w=Math.round(p.x+p.w)-x,h=Math.round(p.y+p.h)-y;
+   const l=x<=0?0:gutter,t=y<=0?0:gutter;
+   const iw=w-l-(x+w>=SIZE?0:gutter),ih=h-t-(y+h>=SIZE?0:gutter);
+   if(iw<=0||ih<=0)return;
+   ctx.fillStyle='rgb('+shade(p.tone,p.r)+','+shade(p.tone,p.g)+','+shade(p.tone,p.b)+')';
+   const radius=Math.min(iw,ih)*.16*soft;
+   if(rounded&&radius>.4){ctx.beginPath();ctx.roundRect(x+l,y+t,iw,ih,radius);ctx.fill()}
+   else ctx.fillRect(x+l,y+t,iw,ih)};
+  const walk=(c,p)=>{
+   if(!c.kids||split<c.at){block(p);return}
+   // Children start on the parent's rectangle and separate into their own.
+   const t=ease(clamp01((split-c.at)/MORPH));
+   for(const kid of c.kids)walk(kid,{x:mix(p.x,kid.x*SIZE,t),y:mix(p.y,kid.y*SIZE,t),
+    w:mix(p.w,kid.w*SIZE,t),h:mix(p.h,kid.h*SIZE,t),r:mix(p.r,kid.r,t),g:mix(p.g,kid.g,t),
+    b:mix(p.b,kid.b,t),tone:mix(p.tone,kid.tone,t)})};
+  walk(trunk,{x:0,y:0,w:SIZE,h:SIZE,r:trunk.r,g:trunk.g,b:trunk.b,tone:trunk.tone});
+  if(photo){const a=smooth(.9,1,split);if(a>.002){ctx.globalAlpha=a;
+   // Lay the ground down at the same opacity, or the blocks stay visible
+   // through everything the picture leaves transparent.
+   ctx.fillStyle='#e7edf3';ctx.fillRect(0,0,SIZE,SIZE);
+   ctx.drawImage(photo,...cover(photo));ctx.globalAlpha=1}}}
+
+ let frame=0,startedAt=0;
+ function run(){cancelAnimationFrame(frame);
+  if(reduced.matches){paint(1);return}
+  startedAt=performance.now();
+  const step=now=>{const t=clamp01((now-startedAt)/RUN);paint(ease(t));
+   if(t<1)frame=requestAnimationFrame(step);else frame=0};
+  frame=requestAnimationFrame(step)}
+
+ paint(0);
+ const image=new Image();
+ image.decoding='async';
+ image.onload=()=>{photo=image;
+  const buffer=document.createElement('canvas');buffer.width=buffer.height=SAMPLE;
+  const bctx=buffer.getContext('2d',{willReadFrequently:true});
+  if(bctx){
+   // The bear is a transparent PNG: sampled straight, its background
+   // averages to black rather than to the canvas it will sit on.
+   bctx.fillStyle='#e7edf3';bctx.fillRect(0,0,SAMPLE,SAMPLE);
+   bctx.drawImage(image,...cover(image).map(v=>v*SAMPLE/SIZE));
+   try{gather.data=bctx.getImageData(0,0,SAMPLE,SAMPLE).data;gather(trunk);order();measured=true}
+   catch{/* a cross-origin source leaves the grid grey; the photo still lands */}}
+  root.dataset.ready='1';
+  if(reduced.matches)paint(1)};
+ // Local and same-origin, so the pixels can actually be read back.
+ image.src='bear.png';
+
+ root.querySelector('[data-reveal-run]').addEventListener('click',run);
+ const watch=new IntersectionObserver(e=>{if(e[0].isIntersecting){watch.disconnect();
+  // Wait for the pixels before starting, or the grid would resolve to grey.
+  if(root.dataset.ready)run();else image.addEventListener('load',run,{once:true})}},{threshold:.35});
+ watch.observe(root);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0}});
+}
+const gravity=document.querySelector('#gravity-demo'),grid=document.querySelector('#reveal-demo');
+const gravityHTML=gravity.outerHTML,gridHTML=grid.outerHTML;
+wireGravity(gravity);wireReveal(grid);
+Object.assign(prototypes,{
+gravity:{title:'Gravity letters',html:gravityHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted')+cssFor(/^\.gravity/)+'.gravity{position:relative;width:min(90vw,460px);height:300px;border-radius:14px;background:#eef3f8}',js:wireGravity.toString()+";wireGravity(document.querySelector('.gravity'));"},
+reveal:{title:'Grid reveal',html:gridHTML,css:'*{box-sizing:border-box}'+varsFor('--line','--muted','--ink')+cssFor(/^\.reveal/),js:wireReveal.toString()+";wireReveal(document.querySelector('.reveal'));"}});

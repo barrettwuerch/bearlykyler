@@ -266,3 +266,17 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 @media(prefers-reduced-motion:reduce){
  .folder-card,.folder-front,.goo-seg,.goo-labels button{transition:none}
 }
+
+/* Gravity letters and grid reveal. Adapted from the beui.dev GravityLetters
+   and GridReveal snippets supplied by the site owner; vanilla builds for
+   this site. */
+.gravity{position:absolute;inset:0;overflow:hidden;cursor:crosshair;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.gravity-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 12px Nunito,Arial,sans-serif;letter-spacing:.3px;color:var(--muted);pointer-events:none;transition:opacity .35s}
+.gravity.used .gravity-hint{opacity:0}
+.gravity-glyph{position:absolute;left:0;top:0;font-family:Nunito,Arial,sans-serif;font-weight:800;line-height:1;color:var(--amber);will-change:transform;transition:opacity .34s}
+.gravity-glyph>span{display:inline-block;transform-origin:bottom center}
+
+.reveal{display:flex;flex-direction:column;align-items:center;gap:12px}
+.reveal canvas{display:block;border-radius:12px;background:#e7edf3}
+.reveal-controls button{border:1px solid var(--line);border-radius:999px;background:#fff;padding:6px 13px;font:600 11px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer}
+.reveal-controls button:hover{color:var(--ink);border-color:var(--ink)}
