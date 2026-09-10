@@ -1,0 +1,189 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pixel loader</title><style>body{margin:0;min-height:100vh;display:grid;place-content:center;gap:20px;background:#fcfdfd;font:16px system-ui}name-tag{width:300px}pixel-loader{width:min(360px,85vw)}input,button{font:inherit;padding:12px;border:1px solid #bccdd9;border-radius:8px}</style><pixel-loader value="42" aria-label="Example loading progress"></pixel-loader><label for="progress">Progress</label><input id="progress" type="range" min="0" max="100" value="42"><button id="restart">Replay loading</button><script>(()=>{/*!
+ * <pixel-loader> - a chunky segmented progress bar, with an optional sprite
+ * that walks along the fill edge. Dependency-free custom element. MIT.
+ *
+ * <pixel-loader value="42"></pixel-loader>
+ * <pixel-loader value="42" sheet="hero.png" frames="8"
+ *               frame-width="64" frame-height="64" fps="10"></pixel-loader>
+ *
+ * Everything is drawn in whole bar-pixels and multiplied up, so edges land on
+ * the device grid instead of anti-aliasing into grey mush next to pixel art.
+ * The bar keeps a fixed number of segments and sizes them to fit, so it reads
+ * the same chunky way on a phone and on a 4K monitor rather than dissolving
+ * into hairline stripes.
+ *
+ * No sprite is required. Without one you get the bar on its own.
+ */
+const BAR_H = 12;        // bar height, in bar-pixels
+const PAD = 3;           // inset from the frame to the segment track
+const GAP = 2;           // bar-pixels between segments
+
+const PALETTE = {
+  loading: { fill: '#a5bccd', bevel: '#c1d3e0' },
+  failed:  { fill: '#c0424a', bevel: '#c0424a' },
+  done:    { fill: '#4f9070', bevel: '#6aa98a' },
+};
+
+class PixelLoader extends HTMLElement {
+  static observedAttributes =
+    ['value', 'state', 'segments', 'sheet', 'frames', 'frame-width',
+     'frame-height', 'fps', 'scale'];
+
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' }).innerHTML = `
+      <style>
+        :host { display: block; }
+        canvas { display: block; width: 100%; height: auto;
+                 image-rendering: pixelated; }
+      </style><canvas></canvas>`;
+    this._cv = this.shadowRoot.querySelector('canvas');
+    this._ctx = this._cv.getContext('2d');
+    this._value = 0; this._shown = 0; this._frame = 0; this._acc = 0;
+    this._img = null; this._last = 0;
+    this._reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    this._loop = this._loop.bind(this);
+    this._resize = () => this._measure();
+  }
+
+  connectedCallback() {
+    this.setAttribute('role','progressbar'); this.setAttribute('aria-valuemin','0'); this.setAttribute('aria-valuemax','100');
+    this._last=0; this._measure();
+    this._observer = new ResizeObserver(this._resize); this._observer.observe(this);
+    addEventListener('resize', this._resize);
+    this._raf = requestAnimationFrame(this._loop);
+  }
+  disconnectedCallback() {
+    cancelAnimationFrame(this._raf);
+    this._observer?.disconnect();
+    removeEventListener('resize', this._resize);
+  }
+
+  attributeChangedCallback(name, _old, val) {
+    if (name === 'value') this._value = this._clamp(parseFloat(val));
+    if (name === 'sheet') this._loadSheet(val);
+    if (name === 'segments' || name === 'scale') this._measure();
+  }
+
+  get value() { return this._value; }
+  set value(v) { this._value = this._clamp(v); }
+  get state() { return this.getAttribute('state') || 'loading'; }
+  set state(s) { this.setAttribute('state', s); }
+
+  _clamp(v) { return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : 0; }
+  _num(attr, fallback) {
+    const v = parseInt(this.getAttribute(attr), 10);
+    return Number.isFinite(v) ? Math.max(1, Math.min(512, v)) : fallback;
+  }
+
+  _loadSheet(src) {
+    if (!src) { this._img = null; return; }
+    const im = new Image();
+    im.decoding = 'async';
+    // Re-measure once it lands: the canvas is sized to leave room for the
+    // sprite, and until the sheet loads there is no sprite to leave room for.
+    im.onload = () => { if(this.getAttribute('sheet')!==src)return; this._img = im; this._measure(); };
+    im.onerror = () => { this._img=null; this._measure(); };
+    im.src = src;
+  }
+
+  /* One integer scale factor for the whole drawing. Fractional scaling is what
+     puts a sprite's edge halfway across a device pixel and softens it. */
+  _measure() {
+    const cssW = this.clientWidth || 480;
+    const spriteH = this._img ? this._num('frame-height', 64) : 0;
+    const unitsW = Math.max(64, Math.floor(cssW / this._num('scale', 3)));
+    const unitsH = BAR_H + spriteH;
+    const u = Math.max(1, Math.floor(cssW / unitsW));
+    this._u = u; this._unitsW = unitsW; this._unitsH = unitsH;
+    this._cv.width = unitsW * u;
+    this._cv.height = unitsH * u;
+    this._cv.style.width = '100%';
+  }
+
+  _loop(now) {
+    const dt = Math.min(64, now - (this._last || now));
+    this._last = now;
+
+    // The bar eases toward the value rather than snapping, so a progress event
+    // that jumps 40% reads as filling instead of teleporting.
+    const gap = this._value - this._shown;
+    this._shown = this._reduced.matches ? this._value : this._shown + gap * (1 - Math.exp(-dt / 90));
+    this.setAttribute('aria-valuenow', String(Math.round(this._value)));
+    this.setAttribute('aria-valuetext', this.state === 'failed' ? 'Loading failed' : `${Math.round(this._value)} percent`);
+    if (Math.abs(gap) < 0.05) this._shown = this._value;
+
+    // The sprite walks only while the bar is actually moving. A frozen sprite
+    // on a stalled bar is honest feedback; a walking one is a lie.
+    const moving = Math.abs(gap) > 0.08 && !this._reduced.matches;
+    if (moving) {
+      this._acc += dt;
+      const step = 1000 / this._num('fps', 10);
+      while (this._acc >= step) { this._acc -= step; this._frame++; }
+    } else {
+      this._frame = 0; this._acc = 0;
+    }
+
+    this._paint();
+    this._raf = requestAnimationFrame(this._loop);
+  }
+
+  _paint() {
+    const ctx = this._ctx, u = this._u, W = this._unitsW;
+    ctx.clearRect(0, 0, this._cv.width, this._cv.height);
+    ctx.imageSmoothingEnabled = false;
+
+    const spriteH = this._img ? this._num('frame-height', 64) : 0;
+    const barY = spriteH;   // the sprite stands on the bar's top edge
+    const P = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x * u, (barY + y) * u, w * u, h * u);
+    };
+
+    const cs = getComputedStyle(this);
+    const tok = (name, fallback) =>
+      (cs.getPropertyValue(name).trim() || fallback);
+    const frame = tok('--loader-frame', '#c5d0d9');
+
+    // Interior, then a hairline frame with the corners left open, so the bar
+    // reads as rounded without a single curved edge.
+    P(1, 1, W - 2, BAR_H - 2, tok('--loader-void', '#ffffff'));
+    P(1, 0, W - 2, 1, frame);
+    P(1, BAR_H - 1, W - 2, 1, frame);
+    P(0, 1, 1, BAR_H - 2, frame);
+    P(W - 1, 1, 1, BAR_H - 2, frame);
+
+    const segs = Math.min(this._num('segments', 24), Math.max(1, Math.floor((W-PAD*2+GAP)/(2+GAP))));
+    const trackW = W - PAD * 2;
+    const segW = Math.max(2, Math.floor((trackW - GAP * (segs - 1)) / segs));
+    const used = segs * segW + (segs - 1) * GAP;
+    const x0 = PAD + Math.floor((trackW - used) / 2);
+    const lit = Math.round((this._shown / 100) * segs);
+    const pal = PALETTE[this.state] || PALETTE.loading;
+    const empty = tok('--loader-empty', '#e7edf1');
+
+    for (let i = 0; i < segs; i++) {
+      const bx = x0 + i * (segW + GAP);
+      if (i < lit) {
+        P(bx, PAD, segW, BAR_H - PAD * 2, pal.fill);
+        P(bx, PAD, segW, 1, pal.bevel);      // lighter top row reads as a bevel
+      } else {
+        P(bx, PAD, segW, BAR_H - PAD * 2, empty);
+      }
+    }
+
+    if (!this._img) return;
+    const fw = this._num('frame-width', 64);
+    const fh = this._num('frame-height', 64);
+    const count = Math.max(1, this._num('frames', 1));
+    const col = this._frame % count;
+    // Stand the sprite on the fill edge, clamped so it never leaves the track.
+    const edge = x0 + (lit > 0 ? lit * (segW + GAP) - GAP : 0);
+    const x = Math.round(Math.max(0, Math.min(W - fw, edge - fw / 2)));
+    ctx.drawImage(this._img, col * fw, 0, fw, fh, x * u, 0, fw * u, fh * u);
+  }
+}
+
+if (!customElements.get('pixel-loader')) customElements.define('pixel-loader', PixelLoader);
+
+const bar=document.querySelector('pixel-loader'),input=document.querySelector('input');let run;input.oninput=()=>{cancelAnimationFrame(run);bar.value=Number(input.value);bar.state=bar.value===100?'done':'loading'};document.querySelector('button').onclick=()=>{cancelAnimationFrame(run);const start=performance.now();function tick(now){const v=Math.min(100,(now-start)/28);bar.value=v;input.value=v;bar.state=v===100?'done':'loading';if(v<100)run=requestAnimationFrame(tick)}run=requestAnimationFrame(tick)};})();</script></html>

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "wave1",
+    "duration": 0.18,
+    "cup": true,
+    "start": 0,
+    "end": 0.18
+  },
+  {
+    "name": "wave2",
+    "duration": 0.12,
+    "cup": true,
+    "start": 0.18,
+    "end": 0.3
+  },
+  {
+    "name": "wave3",
+    "duration": 0.13,
+    "cup": true,
+    "start": 0.3,
+    "end": 0.43
+  },
+  {
+    "name": "wave4",
+    "duration": 0.14,
+    "cup": true,
+    "start": 0.43,
+    "end": 0.5700000000000001
+  },
+  {
+    "name": "wave5",
+    "duration": 0.17,
+    "cup": true,
+    "start": 0.5700000000000001,
+    "end": 0.7400000000000001
+  },
+  {
+    "name": "wave6",
+    "duration": 0.14,
+    "cup": true,
+    "start": 0.7400000000000001,
+    "end": 0.8800000000000001
+  },
+  {
+    "name": "wave3",
+    "duration": 0.1,
+    "cup": true,
+    "start": 0.8800000000000001,
+    "end": 0.9800000000000001
+  },
+  {
+    "name": "wave7",
+    "duration": 0.12,
+    "cup": true,
+    "start": 0.9800000000000001,
+    "end": 1.1
+  },
+  {
+    "name": "wave8",
+    "duration": 0.4,
+    "cup": true,
+    "start": 1.1,
+    "end": 1.5
+  }
+]
