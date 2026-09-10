@@ -90,3 +90,54 @@ Object.assign(prototypes,{
 metallic:{title:'Metallic button',html:document.querySelector('#metallic-demo').outerHTML,css:'*{box-sizing:border-box}:root{--paper:#faf9f6;--ink:#292823}'+cssFor(/^\.metallic|^metal-drift$/),js:''},
 'action-bar':{title:'Expandable action bar',html:barHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823;--amber:#b77637}'+cssFor(/^\.(action-bar|ab-)/),js:wireActionBar.toString()+";wireActionBar(document.querySelector('.action-bar'));"},
 island:{title:'Status island',html:islandHTML,css:'*{box-sizing:border-box}:root{--line:#dedbd4;--muted:#77736b;--ink:#292823}'+cssFor(/^\.island|^island-in$/),js:wireIsland.toString()+";wireIsland(document.querySelector('.island'));"}});
+
+/* Magnetic button, marquee and count-up. Vanilla builds for this site. */
+function wireMagnetic(button){const reduced=matchMedia('(prefers-reduced-motion: reduce)'),hover=matchMedia('(hover: hover) and (pointer: fine)');
+ const label=button.querySelector('.magnetic-label');let x=0,y=0,vx=0,vy=0,tx=0,ty=0,raf=0,last=0;
+ // Same critically-damped spring the card tilt uses, so the two read as one
+ // piece of hardware.
+ function tick(now){const dt=Math.min((now-(last||now))/1000,.032)||.016;last=now;
+  vx+=(190*(tx-x)-26*vx)*dt;vy+=(190*(ty-y)-26*vy)*dt;x+=vx*dt;y+=vy*dt;
+  button.style.transform='translate('+x.toFixed(2)+'px,'+y.toFixed(2)+'px)';
+  if(label)label.style.transform='translate('+(x*.34).toFixed(2)+'px,'+(y*.34).toFixed(2)+'px)';
+  if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(vx)+Math.abs(vy)>.02)raf=requestAnimationFrame(tick);
+  else{raf=0;if(!tx&&!ty){button.style.transform='';if(label)label.style.transform=''}}}
+ const start=()=>{if(!raf){last=0;raf=requestAnimationFrame(tick)}};
+ const rest=()=>{tx=ty=0;if(reduced.matches||!hover.matches){cancelAnimationFrame(raf);raf=0;x=y=vx=vy=0;button.style.transform='';if(label)label.style.transform=''}else start()};
+ // Tracked from a ring around the button rather than from inside it, so the
+ // pull starts before the cursor ever arrives.
+ window.addEventListener('pointermove',e=>{if(reduced.matches||!hover.matches||e.pointerType==='touch')return;
+  const box=button.getBoundingClientRect(),dx=e.clientX-(box.left+box.width/2),dy=e.clientY-(box.top+box.height/2);
+  const distance=Math.hypot(dx,dy),reach=Math.max(box.width,box.height)/2+90;
+  if(distance>reach){if(tx||ty){tx=ty=0;start()}return}
+  const pull=1-distance/reach;tx=dx*pull*.42;ty=dy*pull*.42;start()});
+ document.addEventListener('pointerleave',rest);window.addEventListener('blur',rest);
+ reduced.addEventListener('change',rest);hover.addEventListener('change',rest);
+}
+function wireMarquee(root){const track=root.querySelector('.marquee-track');
+ // A second copy closes the loop: both travel one track width and restart
+ // together, so there is never a gap to see.
+ const copy=track.cloneNode(true);copy.setAttribute('aria-hidden','true');root.append(copy);
+}
+function wireCount(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ for(const el of root.querySelectorAll('.counter-value')){
+  const target=+el.dataset.count,suffix=el.dataset.suffix||'',duration=+el.dataset.duration||1400;
+  const paint=n=>{el.textContent=n.toLocaleString()+suffix};
+  if(reduced.matches){paint(target);continue}
+  // The authored markup already carries the final number, so a page with no
+  // scripting shows the real figure rather than a zero.
+  paint(0);
+  const run=startedAt=>{const step=now=>{const progress=Math.min((now-startedAt)/duration,1);
+    paint(Math.round(target*(1-Math.pow(1-progress,3))));
+    if(progress<1)requestAnimationFrame(step)};requestAnimationFrame(step)};
+  const watch=new IntersectionObserver(entries=>{if(entries[0].isIntersecting){watch.disconnect();run(performance.now())}},{threshold:.5});
+  watch.observe(el);
+ }
+}
+const magnet=document.querySelector('#magnetic-demo'),marquee=document.querySelector('#marquee-demo'),counter=document.querySelector('#counter-demo');
+const magnetHTML=magnet.outerHTML,marqueeHTML=marquee.outerHTML,counterHTML=counter.outerHTML;
+wireMagnetic(magnet);wireMarquee(marquee);wireCount(counter);
+Object.assign(prototypes,{
+magnetic:{title:'Magnetic button',html:magnetHTML,css:'*{box-sizing:border-box}:root{--ink:#292823;--paper:#faf9f6;--amber:#b77637}'+cssFor(/^\.magnetic/),js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
+marquee:{title:'Marquee',html:marqueeHTML,css:'*{box-sizing:border-box}:root{--muted:#77736b;--amber:#b77637}body{display:block!important;padding:40px 0}'+cssFor(/^\.marquee|^marquee-run$/),js:wireMarquee.toString()+";wireMarquee(document.querySelector('.marquee'));"},
+counter:{title:'Count up',html:counterHTML,css:'*{box-sizing:border-box}:root{--ink:#292823;--muted:#77736b}'+cssFor(/^\.counter/),js:wireCount.toString()+";wireCount(document.querySelector('.counter'));"}});

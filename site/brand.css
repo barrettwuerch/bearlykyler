@@ -104,3 +104,35 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
  .ab-label{filter:none;transition:none}.ab-glow{transition:opacity .2s}
  .island-shell{transition:none}.island-slot.enter{animation:none}.island-slot.leaving{transition:none}
 }
+
+/* Scroll reveal. The armed state is applied by JS, never by the stylesheet,
+   so with scripting off nothing is ever left invisible. */
+.reveal-armed{opacity:0;transform:translateY(15px);transition:opacity .62s cubic-bezier(.32,.72,0,1),transform .62s cubic-bezier(.32,.72,0,1)}
+.reveal-armed.reveal-in{opacity:1;transform:none}
+
+/* Magnetic button: the shell leans toward the pointer and the label leans a
+   little further, so the face reads as sitting slightly proud of the pill. */
+.magnetic{display:inline-flex;align-items:center;justify-content:center;padding:15px 27px;border:0;border-radius:999px;background:var(--ink);color:var(--paper);font:700 13px Nunito,Arial,sans-serif;cursor:pointer}
+.magnetic-label{display:inline-block;pointer-events:none}
+.magnetic:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+
+/* Marquee. The track is duplicated so the loop closes on itself; both copies
+   travel one full track width and restart together. */
+.marquee{position:relative;display:flex;width:100%;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent);mask-image:linear-gradient(90deg,transparent,#000 11%,#000 89%,transparent)}
+.marquee-track{display:flex;flex:none;align-items:center;gap:30px;padding-right:30px;animation:marquee-run 19s linear infinite}
+.marquee:hover .marquee-track,.marquee:focus-within .marquee-track{animation-play-state:paused}
+.marquee-item{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;font:700 14px Nunito,Arial,sans-serif;color:var(--muted)}
+.marquee-item::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--amber);flex:none}
+@keyframes marquee-run{to{transform:translateX(-100%)}}
+
+/* Count up. Tabular figures keep each number the same width as it climbs, so
+   the row cannot twitch while it counts. */
+.counter{display:flex;gap:38px}
+.counter-stat{text-align:center}
+.counter-value{display:block;font:900 34px Nunito,Arial,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.counter-label{display:block;margin-top:5px;font:10px monospace;letter-spacing:1.5px;color:var(--muted)}
+
+@media(prefers-reduced-motion:reduce){
+ .reveal-armed{opacity:1;transform:none;transition:none}
+ .marquee-track{animation:none}
+}
