@@ -792,3 +792,127 @@ if(orbsCard){const orbsHTML=orbsCard.outerHTML;
    +'   spun and flattened each frame, with depth driving radius and alpha. */\n'
    +wireOrbs.toString()+";wireOrbs(document.querySelector('.orbs'));"}});
 }
+
+/* ── Staff badge ───────────────────────────────────────────────────────
+   Mechanics from the ID card recording supplied by the site owner,
+   reimplemented in vanilla. Three transforms that never touch each
+   other's axis: the scene holds the perspective, the hanger swings on a
+   pendulum about the lanyard slot, and the sleeve tilts toward the
+   pointer. Hovering tilts, grabbing swings — they never run at once, so
+   neither can stamp on the other's transform. */
+function wireBadge(scene){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const hanger=scene.querySelector('.badge-hanger'),sleeve=scene.querySelector('.badge-sleeve');
+ const TILT=9;
+ // zeta ~0.23: two or three overshoots, done inside two seconds. Lighter than
+ // that and a released badge is still swinging long after you looked away.
+ const K=58,C=3.5,SWAY=.55;
+ let angle=0,vel=0,target=null,frame=0,last=0,clock=0;
+ let dragging=false,anchorX=0,anchorY=0,inView=false,downX=0,travel=0,limit=26;
+
+ // The card preview clips, so the swing may not exceed the room it has. A swung
+ // badge grows downward as well as sideways, so all four corners are tested
+ // against the box, not just its width. Measured square: reading the rects while
+ // the hanger is already rotated would compound the angle into the answer.
+ function measure(){const box=scene.parentElement;if(!box)return;
+  const was=hanger.style.getPropertyValue('--swing');
+  hanger.style.setProperty('--swing','0deg');
+  const P=box.getBoundingClientRect(),s=sleeve.getBoundingClientRect(),h=hanger.getBoundingClientRect();
+  const px=h.left+h.width/2,py=h.top,half=s.width/2,top=s.top-py,bot=s.bottom-py;
+  const fits=deg=>{const r=deg*Math.PI/180,c=Math.cos(r),sn=Math.sin(r);
+   for(const p of [[-half,top],[half,top],[-half,bot],[half,bot]]){
+    const X=px+p[0]*c-p[1]*sn,Y=py+p[0]*sn+p[1]*c;
+    if(X<P.left+2||X>P.right-2||Y<P.top+2||Y>P.bottom-2)return false}
+   return true};
+  let lo=0,hi=26;
+  if(fits(26)&&fits(-26))lo=26;
+  else for(let i=0;i<16;i++){const mid=(lo+hi)/2;(fits(mid)&&fits(-mid))?lo=mid:hi=mid}
+  limit=Math.max(4,lo);
+  hanger.style.setProperty('--swing',was||'0deg')}
+
+ const paint=()=>hanger.style.setProperty('--swing',angle.toFixed(3)+'deg');
+ function step(now){const dt=Math.min(.033,(now-(last||now))/1000);last=now;clock+=dt;
+  if(dragging&&target!==null){angle+=(target-angle)*Math.min(1,dt*14);vel=0}
+  else{const rest=reduced.matches?0:Math.sin(clock*1.15)*SWAY;
+   vel+=(-K*(angle-rest)-C*vel)*dt;angle+=vel*dt}
+  paint();
+  if((dragging||Math.abs(vel)>.02||Math.abs(angle)>.02)&&inView&&!reduced.matches)
+   frame=requestAnimationFrame(step);
+  else{frame=0;last=0}}
+ const run=()=>{if(!frame&&inView&&!reduced.matches){last=0;frame=requestAnimationFrame(step)}};
+ const halt=()=>{cancelAnimationFrame(frame);frame=0;last=0};
+
+ function tiltTo(e){if(reduced.matches||dragging)return;
+  const b=sleeve.getBoundingClientRect();
+  const x=Math.min(Math.max((e.clientX-b.left)/b.width,0),1);
+  const y=Math.min(Math.max((e.clientY-b.top)/b.height,0),1);
+  scene.classList.add('is-live');
+  sleeve.style.setProperty('--ry',((x-.5)*2*TILT).toFixed(2)+'deg');
+  sleeve.style.setProperty('--rx',((.5-y)*2*TILT).toFixed(2)+'deg');
+  sleeve.style.setProperty('--gx',(x*100).toFixed(1)+'%');
+  sleeve.style.setProperty('--gy',(y*100).toFixed(1)+'%')}
+ const flat=()=>{scene.classList.remove('is-live');
+  sleeve.style.setProperty('--rx','0deg');sleeve.style.setProperty('--ry','0deg')};
+
+ function angleFor(e){const dx=e.clientX-anchorX,dy=Math.max(24,e.clientY-anchorY);
+  // Negated: a positive rotate about a top origin swings the hanging end left,
+  // so the raw angle would send the badge away from the pointer.
+  const deg=-Math.atan2(dx,dy)*180/Math.PI;
+  return Math.max(-limit,Math.min(limit,deg))}
+
+ sleeve.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')tiltTo(e)});
+ // A touch pointer stops existing when the finger lifts, so the browser reports
+ // it leaving right after pointerup. Leaving is a mouse idea.
+ sleeve.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')flat()});
+ sleeve.addEventListener('pointerdown',e=>{if(reduced.matches)return;
+  measure();
+  const h=hanger.getBoundingClientRect();anchorX=h.left+h.width/2;anchorY=h.top;
+  dragging=true;downX=e.clientX;travel=0;scene.classList.add('is-drag');flat();
+  sleeve.setPointerCapture&&sleeve.setPointerCapture(e.pointerId);
+  target=angleFor(e);run()});
+ sleeve.addEventListener('pointermove',e=>{if(!dragging)return;
+  travel=Math.max(travel,Math.abs(e.clientX-downX));target=angleFor(e)});
+ function release(){if(!dragging)return;
+  dragging=false;target=null;scene.classList.remove('is-drag');
+  // Hand the spring a little of the angle as speed, so a flick throws it.
+  vel=angle*-1.6;run()}
+ for(const t of ['pointerup','pointercancel','lostpointercapture'])sleeve.addEventListener(t,release);
+ // Pointer capture does not cross browsing contexts, and a release past the edge
+ // of the page never arrives as pointerup here. These are the other ways out.
+ addEventListener('pointerup',release,true);
+ addEventListener('pointercancel',release,true);
+ addEventListener('blur',release);
+ addEventListener('pointermove',e=>{
+  if(dragging&&e.pointerType!=='touch'&&e.buttons===0)release()},true);
+
+ // A tap is the gesture people try first on a phone, and a drag handler alone
+ // ignores it. Push it toward the side that was touched.
+ sleeve.addEventListener('click',e=>{
+  if(reduced.matches||travel>6||Math.abs(vel)>6)return;
+  measure();const h=hanger.getBoundingClientRect();
+  vel+=(e.clientX<h.left+h.width/2?1:-1)*46;run()});
+ sleeve.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+  e.preventDefault();vel+=(e.key==='ArrowLeft'?1:-1)*46;run()});
+
+ new IntersectionObserver(es=>{inView=es[0].isIntersecting;if(inView){measure();run()}else halt()}).observe(scene);
+ new ResizeObserver(measure).observe(scene);
+ document.addEventListener('visibilitychange',()=>{document.hidden?halt():run()});
+ reduced.addEventListener('change',()=>{if(reduced.matches){angle=0;vel=0;paint();flat();halt()}else run()});
+ measure();paint();
+}
+const badgeCard=document.querySelector('#badge-demo');
+if(badgeCard){const badgeHTML=badgeCard.outerHTML;
+ wireBadge(badgeCard);
+ Object.assign(prototypes,{badge:{title:'Staff badge',
+  html:'<div class="badge-stage">'+badgeHTML+'</div>',
+  css:'*{box-sizing:border-box}'+varsFor('--ink','--muted','--paper','--line','--honey','--blue-ink')
+   +cssFor(/^\.badge-|^\.cord|^\.clip|^\.slot|^\.sheen|^\.stock|^\.crest|^\.idrow|^\.photo|^\.facts|^\.stamp|^\.fact|^\.nameplate|^\.sig|^\.meta|^\.footer-tape/)
+   +'.badge-stage{display:grid;place-items:center;width:min(460px,92vw);padding:20px 0 40px}'
+   +'.badge-scene{--bw:300px;--drop:86px}',
+  // toString() starts at "function", so the provenance comment above it never
+  // reaches the downloaded file. Carry it explicitly.
+  js:'/* Staff badge. Mechanics reimplemented in vanilla from an ID card\n'
+   +'   reference: a perspective scene, a pendulum hanger, and a sleeve that\n'
+   +'   tilts toward the pointer. */\n'
+   +wireBadge.toString()+";wireBadge(document.querySelector('.badge-scene'));"}});
+}
