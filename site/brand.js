@@ -1360,3 +1360,181 @@ if(padCard){const padHTML=padCard.outerHTML;
    +pressDepth.toString()+'\n'+wirePad.toString()
    +";wirePad(document.querySelector('.pk-scene'));"}});
 }
+
+/* ── Saturn ─────────────────────────────────────────────────────────────
+   Technique from a p5 sketch supplied by the site owner, reimplemented in
+   vanilla. The formula is left exactly as written, because the formula is the
+   piece: nothing here models a planet. Indices are walked, even ones for the
+   body and odd for the ring, and each index-squared is used as an angle. The
+   body's x is compressed by cos(i / counter) and the ring's is not, which is
+   the only difference between a sphere and a disc. Brightness is 1 - cos(ang),
+   which is also what sets each point's height, so the lit side and the top of
+   the figure are the same fact stated twice.
+
+   Three things are plumbing rather than art and all three changed. The counter
+   advanced once per frame, so a 120Hz screen ran it twice as fast. The geometry
+   was written against windowWidth and a hardcoded y of 400, so it framed
+   correctly in exactly one window. And the counter grows without bound, taking
+   the figure with it — normalising by the counter holds the framing while
+   leaving the structure free to keep evolving.
+
+   The index count stays fixed at every size, unlike the point cloud's. There
+   the points are samples on a sphere and the count is density; here the set of
+   indices IS the drawing, so scaling it would draw a different figure on a
+   phone. The dot size carries the frame instead. */
+function wireSaturn(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.sat-canvas'),ctx=canvas.getContext('2d');
+ const TOP=5200,RATE=.6;              // the sketch's 0.01 a frame, in seconds
+ let w=0,h=0,counter=100,last=0,frame=0,inView=false;
+
+ function paint(){
+  const span=Math.min(w,h);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=getComputedStyle(root).getPropertyValue('--sat-ink').trim()||'#29343c';
+  // The ring reaches about two and a half counters out, so that is what has to
+  // fit — not the body.
+  const k=span/(counter*5.4),cx=w*.5,cy=h*.5,dot=span/372;
+  for(let par=0;par<2;par++){          // 0 body, 1 ring — the sketch's parity
+   for(let i=TOP-par;i>0;i-=2){
+    const radial=counter/Math.cos(counter/i)+par*(counter/2+i%counter);
+    const ang=counter/9+i*i;
+    const x=cx+radial*Math.sin(ang)*(par?1:Math.cos(i/counter))*k;
+    const y=cy+radial*Math.cos(ang+par*2)*k;
+    const s=(1-Math.cos(ang))*dot;
+    if(s<=.02||x<-4||y<-4||x>w+4||y>h+4)continue;
+    ctx.fillRect(x-s/2,y-s/2,s,s)}}}
+
+ function loop(now){const dt=Math.min(.05,(now-(last||now))/1000);last=now;
+  counter+=dt*RATE;paint();frame=requestAnimationFrame(loop)}
+ function sync(){const on=inView&&!document.hidden&&!reduced.matches&&w>0;
+  if(on&&!frame){last=0;frame=requestAnimationFrame(loop)}
+  else if(!on){cancelAnimationFrame(frame);frame=0;last=0}}
+ function size(){const r=root.getBoundingClientRect();
+  if(!r.width||!r.height)return;
+  const dpr=Math.min(devicePixelRatio||1,2);w=r.width;h=r.height;
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);paint()}
+ new ResizeObserver(size).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();paint()});
+ size();sync();
+ return{get counter(){return counter}}}
+
+/* ── Ripple grid ────────────────────────────────────────────────────────
+   Technique from a p5 sketch supplied by the site owner, reimplemented in
+   vanilla. Each dot springs toward a target displaced from its home along the
+   line to the pointer, by the sine of a phase that maps distance through pi.
+
+   The interesting part is an accident worth keeping: that mapping is never
+   clamped, so past the influence radius the phase keeps climbing and the sine
+   keeps turning over. Dots well outside are alternately pushed and pulled in
+   rings, and the whole field ripples rather than only the patch under the
+   cursor. Clamping it would be more correct and much duller.
+
+   Changed: three thousand vectors allocated every frame become six typed
+   arrays; the spring runs on a fixed step, since damping by .87 per frame is
+   twice the friction at half the rate; pointer events replace mouse-only
+   handlers, so a finger works; the grid takes as many columns as the card is
+   wide, rather than sitting square in the middle of it; and with nothing
+   touching it the source drifts, because p5 leaves an untouched mouse at 0,0
+   and puts the whole effect in a corner. */
+function wireRipple(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.rip-canvas'),ctx=canvas.getContext('2d');
+ const N=55,STEP=1/60,DAMP=.87,MAXD=15;
+ let w=0,h=0,gap=8,reach=50,n=0,cols=N,rows=N;
+ let px,py,vx,vy,ox,oy;
+ let mx=0,my=0,live=false,touching=false,t=0,acc=0,last=0,frame=0,inView=false;
+
+ function build(){
+  // The sketch's grid is square because its canvas is. A card is not, so the
+  // spacing comes from the short side and the long side takes the columns it
+  // needs — otherwise the grid sits in the middle with bare margins.
+  gap=h/(N+2);reach=gap*6.2;rows=N;cols=Math.max(N,Math.ceil(w/gap)+1);
+  const x0=(w-(cols-1)*gap)/2,y0=(h-(rows-1)*gap)/2;
+  n=cols*rows;
+  px=new Float32Array(n);py=new Float32Array(n);vx=new Float32Array(n);vy=new Float32Array(n);
+  ox=new Float32Array(n);oy=new Float32Array(n);
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){const k=i*rows+j;
+   ox[k]=x0+i*gap;oy[k]=y0+j*gap;px[k]=ox[k];py[k]=oy[k]}}
+
+ const sourceX=()=>live?mx:w/2+Math.cos(t*.31)*w*.3;
+ const sourceY=()=>live?my:h/2+Math.sin(t*.47)*h*.3;
+
+ function step(){const sx=sourceX(),sy=sourceY();
+  for(let k=0;k<n;k++){
+   const dx=ox[k]-sx,dy=oy[k]-sy,d=Math.hypot(dx,dy)||1e-6;
+   const push=MAXD*Math.sin(d/reach*Math.PI)/d;   // unclamped, as the sketch has it
+   const tx=ox[k]+dx*push,ty=oy[k]+dy*push;
+   const pd=Math.hypot(px[k]-sx,py[k]-sy);
+   const pull=.1-(Math.min(pd,2*w)/(2*w))*.09;
+   const ux=(vx[k]+(tx-px[k])*pull)*DAMP,uy=(vy[k]+(ty-py[k])*pull)*DAMP;
+   vx[k]=ux;vy[k]=uy;px[k]+=ux;py[k]+=uy}}
+
+ function paint(){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=getComputedStyle(root).getPropertyValue('--rip-ink').trim()||'#29343c';
+  const sx=sourceX(),sy=sourceY(),far=Math.max(w,h),scale=gap/8;
+  for(let k=0;k<n;k++){
+   const d=Math.hypot(ox[k]-sx,oy[k]-sy),phase=d/reach*Math.PI;
+   const s=(d<reach?1+10*Math.abs(Math.cos(phase/2))
+                   :Math.max(.1,5-(Math.min(d,far)/far)*4.9))*scale;
+   if(s<=.06)continue;
+   ctx.fillRect(px[k]-s/2,py[k]-s/2,s,s)}}
+
+ function loop(now){const dt=Math.min(.1,(now-(last||now))/1000);last=now;t+=dt;
+  acc+=dt;let guard=0;
+  while(acc>=STEP&&guard<4){step();acc-=STEP;guard++}
+  paint();frame=requestAnimationFrame(loop)}
+ function sync(){const on=inView&&!document.hidden&&!reduced.matches&&w>0;
+  if(on&&!frame){last=0;acc=0;frame=requestAnimationFrame(loop)}
+  else if(!on){cancelAnimationFrame(frame);frame=0;last=0}}
+ function size(){const r=root.getBoundingClientRect();
+  if(!r.width||!r.height)return;
+  const dpr=Math.min(devicePixelRatio||1,2);w=r.width;h=r.height;
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);build();paint()}
+
+ const at=e=>{const r=root.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;live=true};
+ const drop=()=>{live=false;touching=false};
+ root.addEventListener('pointermove',e=>{if(e.pointerType!=='touch'||touching)at(e)});
+ root.addEventListener('pointerdown',e=>{touching=true;at(e);if(reduced.matches){step();paint()}});
+ root.addEventListener('pointerup',drop);
+ root.addEventListener('pointercancel',drop);
+ root.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')drop()});
+
+ new ResizeObserver(size).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();paint()});
+ size();sync();
+ return{get dots(){return n}}}
+
+const satCard=document.querySelector('#saturn-demo');
+if(satCard){const satHTML=satCard.outerHTML;
+ wireSaturn(satCard);
+ Object.assign(prototypes,{saturn:{title:'Saturn',html:satHTML,
+  css:'*{box-sizing:border-box}'+cssFor(/^\.sat/)
+   +'.sat-scene{position:relative;inset:auto;width:min(620px,92vw);aspect-ratio:1.45/1}',
+  js:'/* Saturn. Technique from a p5 sketch supplied by the site owner,\n'
+   +'   reimplemented in vanilla. The formula is the piece and is left as\n'
+   +'   written; the counter runs on seconds rather than frames, the geometry\n'
+   +'   is written against the canvas rather than the window, and the figure is\n'
+   +'   normalised by the counter it would otherwise outgrow. */\n'
+   +wireSaturn.toString()+";wireSaturn(document.querySelector('.sat-scene'));"}});
+}
+const ripCard=document.querySelector('#ripple-demo');
+if(ripCard){const ripHTML=ripCard.outerHTML;
+ wireRipple(ripCard);
+ Object.assign(prototypes,{ripple:{title:'Ripple grid',html:ripHTML,
+  css:'*{box-sizing:border-box}'+cssFor(/^\.rip/)
+   +'.rip-scene{position:relative;inset:auto;width:min(620px,92vw);aspect-ratio:1.45/1}',
+  js:'/* Ripple grid. Technique from a p5 sketch supplied by the site owner,\n'
+   +'   reimplemented in vanilla. The distance-to-phase mapping is deliberately\n'
+   +'   left unclamped, as the sketch has it: past the influence radius the\n'
+   +'   sine keeps turning over and the whole field ripples in rings rather\n'
+   +'   than only the patch under the pointer. */\n'
+   +wireRipple.toString()+";wireRipple(document.querySelector('.rip-scene'));"}});
+}
