@@ -715,6 +715,28 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 /* An open gatefold owns the band — its close chip lands exactly here. */
 .swap:has(.gf.is-open) .swap-switch{opacity:0;visibility:hidden;pointer-events:none;transition-delay:0s,.22s}
 
+/* ── Saturn (025) and the ripple grid (026) ─────────────────────────────
+   Both canvases are transparent and fill the card, so the gallery's own ground
+   carries them — no panel, and no hardcoded background to drift out of step
+   with the card behind it. The ink is the site's, at full strength: the site
+   owner picked it against paper. */
+/* Written out per prefix rather than grouped: the export pulls a component's
+   rules by matching the start of the selector, so a rule reading
+   ".sat-scene,.rip-scene" belongs to Saturn only and the ripple ships without
+   its own geometry. */
+.sat-scene{position:absolute;left:0;right:0;top:34px;bottom:8px;
+ display:block;padding:0;border:0;background:none;--sat-ink:#29343c}
+.sat-canvas{display:block;width:100%;height:100%}
+.rip-canvas{display:block;width:100%;height:100%}
+/* A control covering a whole card is where this site has trapped the page
+   scroll before, so a vertical drag still belongs to the page. */
+.rip-scene{position:absolute;left:0;right:0;top:34px;bottom:8px;
+ display:block;padding:0;border:0;background:none;--rip-ink:#29343c;
+ cursor:crosshair;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.rip-scene:focus-visible{outline:2px solid var(--amber);outline-offset:-3px;border-radius:8px}
+@media(max-width:600px){.sat-scene{top:32px;bottom:6px}}
+@media(max-width:600px){.rip-scene{top:32px;bottom:6px}}
+
 /* ── Press depth (013) ──────────────────────────────────────────────────
    One surface: a face, an edge beneath it, an ambient shadow under that. The
    press moves the face down by exactly the edge it loses, so the button's
