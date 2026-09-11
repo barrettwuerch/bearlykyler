@@ -686,3 +686,109 @@ acc:{title:'Accordion expand',html:accHTML,css:'*{box-sizing:border-box}'+varsFo
   update();
  }
 })();
+
+/* ── Thinking orbs ─────────────────────────────────────────────────────
+   Technique from the thinking orbs on libraries.dev, reimplemented in
+   vanilla here. Points are laid out once on a unit sphere, then spun and
+   flattened every frame; depth drives both radius and alpha, which is the
+   whole of the 3D read — there is no perspective divide, and no second
+   render path per variant. The character of each of the five comes from
+   where its points sit, nothing else. */
+function wireOrbs(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const INK='#59677b',ACCENT='#e0a92b';
+ // The golden angle keeps successive points from ever lining up, so an even
+ // cover of the sphere needs no relaxation pass.
+ const fib=(n,fn)=>{const out=[],GOLD=Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<n;i++){const y=1-(i/(n-1))*2,r=Math.sqrt(Math.max(0,1-y*y)),th=i*GOLD;
+   out.push(Object.assign({x:Math.cos(th)*r,y:y,z:Math.sin(th)*r,r:1,size:1},fn?fn(i):null))}
+  return out};
+ const VARIANTS={
+  solving:{name:'Solving',spin:.55,
+   points:()=>fib(96,i=>({size:1.05+(i%3)*.35,seed:i*1.37})),
+   breathe:(p,t)=>1+.09*Math.sin(t*1.6+p.seed)},
+  thinking:{name:'Thinking',spin:.9,
+   points(){const out=[],LINES=18,PER=16;
+    for(let l=0;l<LINES;l++){const th=l/LINES*Math.PI*2;
+     for(let k=0;k<PER;k++){const phi=(k+.5)/PER*Math.PI,y=Math.cos(phi),r=Math.sin(phi);
+      // Tapered toward the poles: at full size the topmost latitude of all
+      // eighteen meridians lands on one tight circle and reads as a ring
+      // rather than a convergence.
+      out.push({x:Math.cos(th)*r,y:y,z:Math.sin(th)*r,r:1,size:.95*(.3+.7*Math.sin(phi))})}}
+    return out}},
+  listening:{name:'Bear listening',spin:.42,
+   points:()=>fib(260,()=>({size:.62})),
+   breathe:(p,t)=>1+.05*Math.sin(t*2.4+p.y*3)},
+  working:{name:'Working',spin:.7,
+   points(){const out=fib(58,i=>({size:1.1,seed:i*.9}));
+    for(let k=0;k<26;k++){const phi=k/26*Math.PI*2;
+     out.push({x:Math.cos(phi),y:0,z:Math.sin(phi),r:1,size:1.9,hot:true,arc:k/26})}
+    return out},
+   breathe:(p,t)=>p.hot?1:1+.07*Math.sin(t*1.9+(p.seed||0)),
+   fade:(p,t)=>p.hot?Math.max(0,1-((t*.45-p.arc+1)%1)*2.4):1},
+  searching:{name:'Searching',spin:1.05,
+   points(){const out=[],RINGS=11;
+    for(let ri=0;ri<RINGS;ri++){const phi=(ri+.5)/RINGS*Math.PI,y=Math.cos(phi),r=Math.sin(phi);
+     const count=Math.max(6,Math.round(28*r));
+     for(let k=0;k<count;k++){const th=k/count*Math.PI*2+ri*.4;
+      out.push({x:Math.cos(th)*r,y:y,z:Math.sin(th)*r,r:1,size:.8})}}
+    return out}}};
+
+ const canvas=root.querySelector('.orbs-canvas'),ctx=canvas.getContext('2d');
+ const label=root.querySelector('.orbs-label'),dots=root.querySelector('.orbs-dots');
+ const live=root.querySelector('.orbs-live'),buttons=[...root.querySelectorAll('[data-orbs]')];
+ const size=canvas.width,dpr=Math.min(devicePixelRatio||1,2);
+ canvas.width=canvas.height=Math.round(size*dpr);
+ canvas.style.width=canvas.style.height=size+'px';
+ ctx.scale(canvas.width/size,canvas.height/size);
+ const mid=size/2,R=size*.38,TILT=-.42,ct=Math.cos(TILT),st=Math.sin(TILT);
+
+ let key='solving',pts=VARIANTS[key].points(),t=0,last=0,frame=0,inView=false,step=0,tick2=0;
+ function draw(){const v=VARIANTS[key];
+  ctx.clearRect(0,0,size,size);
+  const a=t*v.spin,cs=Math.cos(a),sn=Math.sin(a);
+  for(const p of pts){
+   const rr=p.r*(v.breathe?v.breathe(p,t):1);
+   const px=p.x*rr,py=p.y*rr,pz=p.z*rr;
+   const X=px*cs-pz*sn,Zr=px*sn+pz*cs;
+   const Y=py*ct-Zr*st,Z=py*st+Zr*ct;
+   const depth=(Z+1)/2,f=v.fade?v.fade(p,t):1;
+   if(f<=0)continue;
+   ctx.globalAlpha=Math.max(0,Math.min(1,(.12+.88*depth)*(p.hot?1:.85)*f));
+   ctx.fillStyle=p.hot?ACCENT:INK;
+   ctx.beginPath();ctx.arc(mid+X*R,mid+Y*R,Math.max(.35,p.size*(.3+.7*depth)),0,6.284);ctx.fill()}
+  ctx.globalAlpha=1}
+ function loop(now){const dt=Math.min(.05,(now-(last||now))/1000);last=now;t+=dt;draw();
+  frame=requestAnimationFrame(loop)}
+ // Off-screen the loop stops entirely: a spinning canvas should cost nothing
+ // while the rest of the page is being read.
+ function sync(){const on=inView&&!document.hidden&&!reduced.matches;
+  if(on&&!frame){last=0;frame=requestAnimationFrame(loop)}
+  else if(!on){cancelAnimationFrame(frame);frame=0;last=0}
+  if(dots)clearInterval(tick2);
+  if(on&&dots)tick2=setInterval(()=>{step=(step+1)%4;dots.textContent='.'.repeat(step+1)},420)}
+ function select(next){if(!VARIANTS[next])return;
+  key=next;pts=VARIANTS[key].points();t=0;
+  label.textContent=VARIANTS[key].name;
+  if(live)live.textContent=VARIANTS[key].name;
+  for(const b of buttons)b.setAttribute('aria-pressed',String(b.dataset.orbs===key));
+  draw()}
+ for(const b of buttons)b.addEventListener('click',()=>select(b.dataset.orbs));
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();draw()});
+ // A still frame first, so reduced motion still shows the shape.
+ draw();
+ return{select}
+}
+const orbsCard=document.querySelector('#orbs-demo');
+if(orbsCard){const orbsHTML=orbsCard.outerHTML;
+ wireOrbs(orbsCard);
+ Object.assign(prototypes,{orbs:{title:'Thinking orbs',html:orbsHTML,
+  css:'*{box-sizing:border-box}'+varsFor('--ink','--muted','--line','--paper')+cssFor(/^\.orbs/),
+  // toString() starts at "function", so the provenance comment above it never
+  // reaches the downloaded file. Carry it into the export explicitly.
+  js:'/* Thinking orbs. Technique from the thinking orbs on libraries.dev,\n'
+   +'   reimplemented in vanilla: points laid out once on a unit sphere, then\n'
+   +'   spun and flattened each frame, with depth driving radius and alpha. */\n'
+   +wireOrbs.toString()+";wireOrbs(document.querySelector('.orbs'));"}});
+}

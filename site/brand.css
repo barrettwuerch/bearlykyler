@@ -552,3 +552,26 @@ h2>span{color:inherit}
 /* Blue set as type. Decorative blue is untouched. */
 .wordmark span,.about h2,.specimen-title{color:var(--blue-ink)}
 h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
+
+/* ── Thinking orbs (020) ───────────────────────────────────────────────
+   The pill and the switcher are the vocabulary the filters, the bear
+   controls and the signal orb already use, so the card needs no new
+   shapes — only the canvas is new. */
+.orbs{display:flex;flex-direction:column;align-items:center;gap:14px}
+.orbs-pill{display:inline-flex;align-items:center;gap:9px;padding:7px 18px 7px 8px;border-radius:999px;
+ background:#fff;white-space:nowrap;
+ box-shadow:0 1px 1px rgba(41,52,60,.04),0 4px 12px rgba(41,52,60,.07),inset 0 0 0 1px rgba(41,52,60,.07)}
+.orbs-canvas{display:block}
+.orbs-pill b{font:700 13.5px Nunito,Arial,sans-serif;letter-spacing:-.1px;color:var(--ink)}
+/* A fixed box for the dots, so the label never shifts as they cycle. */
+.orbs-dots{display:inline-block;width:1.7em;font-style:normal;font-weight:700;color:var(--muted);
+ text-align:left;font-variant-numeric:tabular-nums}
+/* The pill already shows the state; this is the announced copy only. */
+.orbs-live{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.orbs-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:250px}
+.orbs-controls button{border:1px solid var(--line);border-radius:999px;background:#fff;padding:6px 12px;
+ font:600 11.5px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer;
+ transition:color .15s,border-color .15s}
+.orbs-controls button:hover{color:var(--ink)}
+.orbs-controls button[aria-pressed=true]{color:var(--ink);border-color:var(--ink)}
+@media(max-width:760px){.orbs-controls button{min-height:44px;padding:0 14px}}
