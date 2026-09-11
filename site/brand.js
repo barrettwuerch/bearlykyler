@@ -301,7 +301,15 @@ confirm:{title:'Delete, then mean it',html:confirmHTML,css:'*{box-sizing:border-
 orb:{title:'Signal orb',html:orbHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line','--amber')+cssFor(/^\.orb/),js:wireOrb.toString()+";wireOrb(document.querySelector('.orb'));"},
 odometer:{title:'Odometer',html:odometerHTML,css:'*{box-sizing:border-box}'+varsFor('--muted','--ink','--line')+cssFor(/^\.odo/)+'.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}',js:wireOdometer.toString()+";wireOdometer(document.querySelector('.odometer'));"}});
 
-/* Gooey nav. A vanilla build for this site. */
+/* Lean-out folder and gooey nav. Vanilla builds for this site. */
+function wireFolder(root){const body=root.querySelector('.folder-body');
+ const set=open=>{root.classList.toggle('open',open);body.setAttribute('aria-expanded',String(open))};
+ body.addEventListener('click',()=>set(!root.classList.contains('open')));
+ // Leaving the folder puts it away; hover already lifts the cards, so a
+ // half-open state left behind on exit reads as a bug.
+ body.addEventListener('pointerleave',()=>set(false));
+ body.addEventListener('focusout',e=>{if(!body.contains(e.relatedTarget))set(false)});
+}
 function wireGoo(root){const track=root.querySelector('.goo-track');
  const labels=[...root.querySelectorAll('.goo-labels button')];
  // The backing shapes mirror the labels rather than being authored twice, so
@@ -315,10 +323,13 @@ function wireGoo(root){const track=root.querySelector('.goo-track');
  // Web fonts land after first paint and change every label's width.
  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measure);
 }
-const goo=document.querySelector('#goo-demo');
-const gooHTML=goo.outerHTML;
-wireGoo(goo);
+const folder=document.querySelector('#folder-demo'),goo=document.querySelector('#goo-demo');
+// The card sits inside the two-folder switch; the standalone export is one
+// folder, so the switch's own bookkeeping does not travel with it.
+const folderHTML=folder.outerHTML.replace(' data-pane="lean"','').replace('folder off','folder'),gooHTML=goo.outerHTML;
+wireFolder(folder);wireGoo(goo);
 Object.assign(prototypes,{
+folder:{title:'Folder',html:folderHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--line','--ink')+cssFor(/^\.folder/),js:wireFolder.toString()+";wireFolder(document.querySelector('.folder'));"},
 goo:{title:'Gooey nav',html:gooHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink')+cssFor(/^\.goo/),js:wireGoo.toString()+";wireGoo(document.querySelector('.goo'));"}});
 
 /* Gravity letters. A heightmap rather than pairwise collision: glyphs only
@@ -974,17 +985,39 @@ function wireGatefold(scene){const reduced=matchMedia('(prefers-reduced-motion: 
  // and the reflow that follows reads as the folder leaving the screen, so it
  // shut itself the instant it opened. The visible controls are the way out.
  apply();
- return{get state(){return state}}
+ return{get state(){return state},close(){go('shut')}}
+}
+/* One square, two folders. The card's source buttons follow the choice, so
+   "view source" always hands over the folder you are actually looking at. */
+function wireSwap(root,onLeave){const SOURCE={gatefold:'gatefold',lean:'folder'};
+ const picks=[...root.querySelectorAll('.swap-switch button')];
+ const panes=new Map(picks.map(b=>[b.dataset.pick,root.querySelector('[data-pane="'+b.dataset.pick+'"]')]));
+ const actions=[...(root.closest('.card')||root).querySelectorAll('.card-actions [data-source]')];
+ let current='';
+ const select=key=>{if(key===current)return;
+  // Switching away from an open folder leaves it open behind the one you
+  // asked for; it is put away without taking the focus off the switch.
+  if(current&&onLeave)onLeave(current);
+  current=key;
+  picks.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pick===key)));
+  panes.forEach((el,k)=>{const on=k===key;el.classList.toggle('off',!on);
+   if('inert' in el)el.inert=!on});
+  actions.forEach(b=>{if(SOURCE[key])b.dataset.source=SOURCE[key]})};
+ picks.forEach(b=>b.addEventListener('click',()=>select(b.dataset.pick)));
+ const first=picks.find(b=>b.getAttribute('aria-pressed')==='true')||picks[0];
+ select(first.dataset.pick);
 }
 const gatefoldCard=document.querySelector('#gatefold');
-if(gatefoldCard){const gatefoldHTML=gatefoldCard.outerHTML;
- wireGatefold(gatefoldCard);
+if(gatefoldCard){const gatefoldHTML=gatefoldCard.outerHTML.replace(' data-pane="gatefold"','').replace('gf-scene off','gf-scene');
+ const gfHandle=wireGatefold(gatefoldCard);
+ const swap=document.querySelector('#folders');
+ if(swap)wireSwap(swap,from=>{if(from==='gatefold')gfHandle.close();else folder.classList.remove('open')});
  Object.assign(prototypes,{gatefold:{title:'Gatefold folder',
   html:'<div class="gf-stage">'+gatefoldHTML+'</div>',
   css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--muted','--honey','--line')
    +cssFor(/^\.gf-|^\.gf\b|^\.gf\./)
    +'.gf-stage{display:grid;place-items:center;padding:30px 0 50px}'
-   +'.gf-scene{--gf-w:300px;--gf-h:300px;--gf-lift:104px}',
+   +'.gf-scene{--gf-w:300px;--gf-h:300px}',
   js:'/* Gatefold folder. Mechanic reimplemented in vanilla from a gatefold\n'
    +'   folder reference: two flaps hinged on their outer edges, a pocket that\n'
    +'   sits in front of the document in 3D, and a sheet at reading width. */\n'
