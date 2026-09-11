@@ -22,3 +22,9 @@ dist/
 .dev.vars
 .env
 .env.*
+
+# Scratch pages written into the web root by the verification scripts. Fourteen
+# of them reached production once, because the deploy serves site/ wholesale and
+# `git add -A` does not know which files were meant to be there.
+site/__*.html
+site/export-*.html
