@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Odometer</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}*{box-sizing:border-box}:root{--muted:#59677b;--ink:#29343c;--line:#dce5ec}.odometer { display: flex; flex-direction: column; align-items: center; gap: 13px; }.odometer-value { display: inline-flex; align-items: center; font-style: normal; font-variant: tabular-nums; font-size-adjust: none; font-kerning: auto; font-optical-sizing: auto; font-feature-settings: normal; font-variation-settings: normal; font-weight: 900; font-stretch: normal; font-size: 40px; font-family: Nunito, Arial, sans-serif; color: var(--ink); line-height: 1; }.odo-place { position: relative; display: inline-block; overflow: hidden; height: 1.5em; mask-image: linear-gradient(transparent 0px, rgba(0, 0, 0, 0.5) 11%, rgb(0, 0, 0) 22%, rgb(0, 0, 0) 78%, rgba(0, 0, 0, 0.5) 89%, transparent 100%); }.odo-reel { display: block; transition: transform 0.62s cubic-bezier(0.32, 0.72, 0, 1); }.odo-face { display: flex; align-items: center; justify-content: center; height: 1.5em; }.odo-mark { display: inline-block; }.odometer-controls { display: flex; gap: 6px; }.odometer-controls button { border: 1px solid var(--line); border-radius: 999px; background: rgb(255, 255, 255); padding: 6px 13px; font: 600 11px Nunito, Arial, sans-serif; color: var(--muted); cursor: pointer; }.odometer-controls button:hover { color: var(--ink); border-color: var(--ink); }.scramble-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}</style></head><body><div class="odometer" id="odometer-demo" data-value="1500"><span class="odometer-value" aria-hidden="true"></span><span class="scramble-sr" role="status" aria-live="polite">1,500</span><div class="odometer-controls"><button type="button" data-odo="step">Add 37</button><button type="button" data-odo="random">Shuffle</button><button type="button" data-odo="reset">Reset</button></div></div><script>function wireOdometer(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const row=root.querySelector('.odometer-value'),status=root.querySelector('[role=status]');
+ const start=+root.dataset.value||0;let value=start,shape='';
+ const face=n=>{const s=document.createElement('span');s.className='odo-face';s.textContent=n;return s};
+ const mod=(n,m)=>((n%m)+m)%m;
+
+ function build(text){row.replaceChildren();shape='';
+  for(const ch of text){
+   if(ch>='0'&&ch<='9'){shape+='d';
+    const place=document.createElement('span');place.className='odo-place';
+    const reel=document.createElement('span');reel.className='odo-reel';
+    reel.append(face(ch));place.append(reel);place.dataset.digit=ch;row.append(place)}
+   else{shape+='m';const mark=document.createElement('span');mark.className='odo-mark';mark.textContent=ch;row.append(mark)}}}
+
+ // Rebuild the reel as the exact run of faces between here and there, so the
+ // column always travels the real distance instead of snapping or unwinding
+ // the long way round.
+ function roll(place,to,dir){const from=+place.dataset.digit;
+  const steps=dir>=0?mod(to-from,10):mod(from-to,10);
+  place.dataset.digit=to;
+  if(!steps)return;
+  const seq=[];for(let i=0;i<=steps;i++)seq.push(dir>=0?mod(from+i,10):mod(from-i,10));
+  const reel=place.firstElementChild;
+  reel.replaceChildren(...(dir>=0?seq:seq.slice().reverse()).map(face));
+  const at=dir>=0?0:-steps*1.5,to_=dir>=0?-steps*1.5:0;
+  reel.style.transition='none';reel.style.transform='translateY('+at+'em)';
+  void reel.offsetHeight;
+  reel.style.transition=reduced.matches?'none':'';
+  reel.style.transform='translateY('+to_+'em)'}
+
+ function show(next){const text=next.toLocaleString('en-US');
+  const pattern=[...text].map(c=>c>='0'&&c<='9'?'d':'m').join('');
+  const dir=next>=value?1:-1;value=next;status.textContent=text;
+  // A place appearing or disappearing changes the row, so rebuild rather than
+  // roll columns that no longer line up.
+  if(pattern!==shape){build(text);return}
+  const places=[...row.querySelectorAll('.odo-place')];let i=0;
+  for(const ch of text)if(ch>='0'&&ch<='9')roll(places[i++],+ch,dir)}
+
+ build(start.toLocaleString('en-US'));
+ root.querySelector('[data-odo=step]').addEventListener('click',()=>show(value+37));
+ root.querySelector('[data-odo=random]').addEventListener('click',()=>show(Math.floor(Math.random()*99999)));
+ root.querySelector('[data-odo=reset]').addEventListener('click',()=>show(start));
+};wireOdometer(document.querySelector('.odometer'));</script></body></html>

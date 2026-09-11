@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gravity letters</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}*{box-sizing:border-box}:root{--amber:#2274ad;--muted:#59677b}.gravity { position: absolute; inset: 0px; overflow: hidden; cursor: crosshair; touch-action: manipulation; user-select: none; }.gravity-hint { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 600 12px Nunito, Arial, sans-serif; letter-spacing: 0.3px; color: var(--muted); pointer-events: none; transition: opacity 0.35s; }.gravity.used .gravity-hint { opacity: 0; }.gravity-glyph { position: absolute; left: 0px; top: 0px; font-family: Nunito, Arial, sans-serif; font-weight: 800; line-height: 1; color: var(--amber); will-change: transform; transition: opacity 0.34s; }.gravity-glyph > span { display: inline-block; transform-origin: center bottom; }.gravity{position:relative;width:min(90vw,460px);height:300px;border-radius:14px;background:#eef3f8}</style></head><body><div class="gravity" id="gravity-demo" role="img" aria-label="Letters piling up. Click or hold to drop more."><span class="gravity-hint">Click to drop · hold to pour</span></div><script>function wireGravity(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const POOL='ABCDEFGHJKLMNPRSTUVWXYZ',COL=8,MAX=44,GRAVITY=1150,SLOPE=.34,LEAVE=340;
+ const bodies=[];let heights=[],frame=0,last=0,hold=0,pour=0,live=null;
+ const box=()=>({w:root.clientWidth||1,h:root.clientHeight||1});
+ const span=(x,w)=>{const from=Math.max(0,Math.floor(x/COL));
+  return [from,Math.min(heights.length-1,Math.max(from,Math.ceil((x+w)/COL)-1))]};
+ const topOf=(from,to)=>{if(from<0||to>=heights.length)return Infinity;let t=0;
+  for(let i=from;i<=to;i++)t=Math.max(t,heights[i]);return t};
+ const restY=(x,w,h)=>{const [a,b]=span(x,w);return box().h-topOf(a,b)-h};
+ const deposit=body=>{const [a,b]=span(body.x,body.w);
+  for(let i=a;i<=b;i++)heights[i]=Math.max(heights[i],box().h-body.y)};
+
+ // Walk downhill while a neighbouring column sits far enough below: this is
+ // what makes a pile spread instead of growing a single tower.
+ function settleX(x,w,h){const {w:width}=box();let at=Math.min(Math.max(x,0),Math.max(width-w,0));
+  const fall=h*SLOPE,step=Math.max(COL,Math.round(w/3));
+  for(let i=0;i<40;i++){const [a,b]=span(at,w),run=b-a+1,here=topOf(a,b);
+   const left=here-topOf(a-run,a-1),right=here-topOf(b+1,b+run);
+   let next=at;
+   if(left>fall&&right>fall)next=Math.random()<.5?at-step:at+step;
+   else if(left>fall&&left>=right)next=at-step;
+   else if(right>fall)next=at+step;
+   next=Math.min(Math.max(next,0),Math.max(width-w,0));
+   if(next===at)break;at=next}
+  return at}
+
+ // Tilt to the slope it lands on, so a glyph resting half on a neighbour
+ // leans rather than floating level.
+ function aim(body){const {h:height}=box();
+  body.targetX=settleX(body.x,body.w,body.h);
+  const [a,b]=span(body.targetX,body.w),mid=Math.ceil((a+b)/2);
+  const lean=b>a?(topOf(a,mid-1)-topOf(mid,b))/Math.max((b-a+1)/2*COL,1):0;
+  body.rest=Math.max(-16,Math.min(16,Math.atan(lean)*180/Math.PI+(Math.random()-.5)*7));
+  body.targetY=restY(body.targetX,body.w,body.h);
+  body.fromX=body.x;body.fromY=Math.min(body.y,body.targetY)}
+
+ const paint=body=>{body.el.style.transform='translate3d('+body.x.toFixed(1)+'px,'+body.y.toFixed(1)+'px,0) rotate('+body.rot.toFixed(1)+'deg)'};
+ function rebuild(){heights=new Array(Math.max(1,Math.ceil(box().w/COL))).fill(0);
+  for(const body of bodies.filter(b=>b.done).sort((x,y)=>y.y-x.y))deposit(body)}
+
+ function tick(now){const dt=Math.min((now-(last||now))/1000,1/30);last=now;let busy=false;
+  for(const body of bodies){if(body.done)continue;
+   body.vy+=GRAVITY*dt;body.y+=body.vy*dt;
+   const total=body.targetY-body.fromY,p=total>0?Math.min((body.y-body.fromY)/total,1):1;
+   // Drift across to the landing column as it falls, rather than teleporting.
+   body.x=body.fromX+(body.targetX-body.fromX)*p*(2-p);
+   body.rot=body.spin*(1-p*p*p)+body.rest*(p*p*p);
+   // Land against the pile as it is now, not as it was at spawn: anything
+   // still in the air would otherwise drop straight through whatever landed
+   // underneath it while it fell.
+   if(body.y>=restY(body.x,body.w,body.h)){
+    body.x=settleX(body.x,body.w,body.h);body.y=restY(body.x,body.w,body.h);body.rot=body.rest;
+    body.done=true;deposit(body);paint(body);
+    body.inner.animate?.([{transform:'scaleY(.82)'},{transform:'scaleY(1)'}],{duration:160,easing:'cubic-bezier(.215,.61,.355,1)'});
+    continue}
+   paint(body);busy=true}
+  frame=busy?requestAnimationFrame(tick):0}
+ const wake=()=>{if(!frame&&!reduced.matches){last=0;frame=requestAnimationFrame(tick)}};
+
+ function trim(){const alive=bodies.filter(b=>!b.leaving);
+  for(let i=0;i<alive.length-MAX;i++){const body=alive[i];body.leaving=true;body.el.style.opacity='0';
+   setTimeout(()=>{body.el.remove();bodies.splice(bodies.indexOf(body),1);rebuild()},LEAVE)}}
+
+ function drop(cx,cy){const {w,h}=box();if(!heights.length)rebuild();
+  const el=document.createElement('span');el.className='gravity-glyph';
+  const inner=document.createElement('span');inner.textContent=POOL[Math.random()*POOL.length|0];el.append(inner);
+  el.style.fontSize=Math.round(21*(.8+Math.random()*.5))+'px';root.append(el);
+  const body={el,inner,w:el.offsetWidth,h:el.offsetHeight,vy:0,rot:0,done:false};
+  body.x=Math.min(Math.max(cx-body.w/2,0),Math.max(w-body.w,0));body.y=cy-body.h/2;
+  body.spin=reduced.matches?0:(Math.random()-.5)*70;
+  aim(body);
+  if(reduced.matches){body.x=body.targetX;body.y=body.targetY;body.rot=body.rest;body.done=true;deposit(body)}
+  else{// start clear of the pile, and clear of anything still falling above it
+   let from=Math.min(body.y,body.targetY-22);
+   for(const other of bodies)if(!other.done&&other.targetX<body.targetX+body.w&&body.targetX<other.targetX+other.w)
+    from=Math.min(from,other.y-body.h-8);
+   body.y=body.fromY=from;body.rot=body.spin}
+  bodies.push(body);paint(body);root.classList.add('used');trim();wake()}
+
+ const at=e=>{const r=root.getBoundingClientRect();
+  return [Math.min(Math.max(e.clientX-r.left,0),r.width),Math.min(Math.max(e.clientY-r.top,0),r.height)]};
+ root.addEventListener('pointerdown',e=>{if(e.button)return;e.preventDefault();
+  root.setPointerCapture?.(e.pointerId);live=e.pointerId;const [x,y]=at(e);drop(x,y);
+  let px=x,py=y;
+  root.addEventListener('pointermove',function move(m){if(m.pointerId!==live)return;[px,py]=at(m);
+   root.__move=move},{passive:true});
+  hold=setTimeout(()=>{pour=setInterval(()=>drop(px+(Math.random()-.5)*16,py),120)},300)});
+ const stop=()=>{clearTimeout(hold);clearInterval(pour);pour=0;live=null};
+ for(const type of ['pointerup','pointercancel','pointerleave'])root.addEventListener(type,stop);
+ new ResizeObserver(()=>{rebuild()}).observe(root);
+ reduced.addEventListener('change',()=>{if(reduced.matches){cancelAnimationFrame(frame);frame=0}});
+ rebuild();
+};wireGravity(document.querySelector('.gravity'));</script></body></html>

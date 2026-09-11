@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Card hover tilt</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}*{box-sizing:border-box}:root{--amber:#2274ad;--muted:#59677b}.t-tilt { --tilt-perspective: 1000px; --tilt-return: 1000ms; --tilt-return-ease: cubic-bezier(.22,1,.36,1); --tilt-follow: 400ms; --tilt-follow-ease: cubic-bezier(.22,1,.36,1); --tilt-glare-opacity: .32; --tilt-glare-fade: 300ms; --tilt-glare-ease: cubic-bezier(.22,1,.36,1); touch-action: pan-y; }.t-tilt-card { position: relative; border-radius: 12px; overflow: hidden; transform: perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx,0deg)) rotateY(var(--tilt-ry,0deg)); transform-style: preserve-3d; transition: transform var(--tilt-return) var(--tilt-return-ease); will-change: transform; }.t-tilt-card.is-tilting { transition: transform var(--tilt-follow) var(--tilt-follow-ease); }.t-tilt-glare { position: absolute; inset: 0px; pointer-events: none; opacity: 0; mix-blend-mode: screen; background: radial-gradient(circle 95px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.48),rgba(255,255,255,.06) 52%,rgba(255,255,255,0) 84%),
+  radial-gradient(circle 200px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.22),rgba(255,255,255,.04) 58%,rgba(255,255,255,0) 78%),
+  radial-gradient(circle 360px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.1),rgba(255,255,255,0) 88%); transition: opacity var(--tilt-glare-fade) var(--tilt-glare-ease); }.t-tilt.is-hover .t-tilt-glare { opacity: var(--tilt-glare-opacity); }.t-tilt-card { width: 178px; padding: 14px 14px 16px; background: rgb(36, 46, 54); color: rgb(238, 243, 247); text-align: center; box-shadow: rgba(41, 52, 60, 0.28) 0px 18px 34px; }.t-tilt-card img { display: block; width: 112px; height: 112px; margin: 0px auto 10px; border-radius: 10px; background: rgb(244, 247, 250); }.t-tilt-name { display: block; font: 800 15px Nunito, Arial, sans-serif; letter-spacing: -0.2px; }.t-tilt-role { display: block; margin-top: 2px; font: 10px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 1.4px; color: rgb(159, 179, 194); }@media (prefers-reduced-motion: reduce){.t-tilt-card { transform: none !important; transition: none !important; }}.t-tilt-shim{width:112px;height:112px;margin:0 auto 10px;border-radius:10px;background:#f4f7fa}</style></head><body><div class="t-tilt" id="tilt-demo"><div class="t-tilt-card"><div class="t-tilt-shim"></div><span class="t-tilt-name">Bearly Kyler</span><span class="t-tilt-role">DESIGN &amp; CODE</span><div class="t-tilt-glare"></div></div></div><script>function wireTilt(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const card=root.querySelector('.t-tilt-card'),LIMIT=11;let frame=0,px=0,py=0;
+ // A tap is the gesture people try first on a phone, and on a pointer-following
+ // card it does nothing: pointerup lands a few frames after pointerdown, so the
+ // card twitches and settles. These hold the tap so it plays a deliberate lean.
+ const TAP_SLOP=10,TAP_TIME=500,TAP_HOLD=380,TAP_LIMIT=LIMIT*1.6;
+ let hold=0,downX=0,downY=0,downAt=0,tapping=false;
+ // Read the pointer against the OUTER wrapper, which never transforms — measuring
+ // the card while it tilts would feed its own rotation back into the input.
+ function apply(limit){frame=0;const box=root.getBoundingClientRect(),L=limit||LIMIT;
+  const x=Math.min(Math.max((px-box.left)/box.width,0),1),y=Math.min(Math.max((py-box.top)/box.height,0),1);
+  root.style.setProperty('--tilt-ry',((x-.5)*2*L).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-rx',((.5-y)*2*L).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-gx',(x*100).toFixed(1)+'%');
+  root.style.setProperty('--tilt-gy',(y*100).toFixed(1)+'%')}
+ function track(e){if(reduced.matches)return;px=e.clientX;py=e.clientY;
+  root.classList.add('is-hover');card.classList.add('is-tilting');
+  // Wrapped, not passed directly: rAF hands the callback a timestamp, which
+  // would land in apply's limit argument and rotate the card by the clock.
+  if(!frame)frame=requestAnimationFrame(()=>apply())}
+ function rest(){clearTimeout(hold);hold=0;tapping=false;
+  cancelAnimationFrame(frame);frame=0;
+  root.classList.remove('is-hover');card.classList.remove('is-tilting');
+  root.style.setProperty('--tilt-rx','0deg');root.style.setProperty('--tilt-ry','0deg')}
+ // Lean further than a drag would, hold, then let the long return ease it back.
+ function nudge(){if(reduced.matches)return rest();
+  cancelAnimationFrame(frame);frame=0;tapping=true;
+  root.classList.add('is-hover');card.classList.add('is-tilting');
+  apply(TAP_LIMIT);
+  clearTimeout(hold);hold=setTimeout(rest,TAP_HOLD)}
+ root.addEventListener('pointermove',e=>{if(tapping)return;track(e)});
+ root.addEventListener('pointerdown',e=>{rest();
+  downX=e.clientX;downY=e.clientY;downAt=e.timeStamp;
+  root.setPointerCapture?.(e.pointerId);track(e)});
+ root.addEventListener('pointerup',e=>{
+  const still=Math.abs(e.clientX-downX)<=TAP_SLOP&&Math.abs(e.clientY-downY)<=TAP_SLOP;
+  if(e.pointerType==='touch'&&still&&e.timeStamp-downAt<=TAP_TIME)nudge();else rest()});
+ // A touch pointer ceases to exist at the end of a gesture, so the browser
+ // fires pointerleave immediately after pointerup — honouring it here would
+ // cancel the tap lean in the same frame it starts. Leaving is a mouse idea.
+ root.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')rest()});
+ // pointercancel still rests: that is the browser taking the gesture for a scroll.
+ root.addEventListener('pointercancel',rest);
+ reduced.addEventListener('change',()=>{if(reduced.matches)rest()});
+};wireTilt(document.querySelector('.t-tilt'));</script></body></html>
