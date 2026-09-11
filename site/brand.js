@@ -974,9 +974,9 @@ function wireGatefold(scene){const reduced=matchMedia('(prefers-reduced-motion: 
  if(cover){const b=cover.querySelector('b'),n=cover.querySelector('span');
   if(b)b.textContent=label;
   if(n)n.textContent=String(count).padStart(2,'0')+' DOCUMENT'+(count===1?'':'S')}
- // Off-screen it is idle anyway; a folder left open off-screen should not be
- // the state you come back to.
- new IntersectionObserver(es=>{if(!es[0].isIntersecting&&state!=='shut')go('shut')}).observe(scene);
+ // No auto-close on leaving the viewport: opening the sheet grows the scene,
+ // and the reflow that follows reads as the folder leaving the screen, so it
+ // shut itself the instant it opened. The visible controls are the way out.
  apply();
  return{get state(){return state}}
 }
