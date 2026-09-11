@@ -916,3 +916,81 @@ if(badgeCard){const badgeHTML=badgeCard.outerHTML;
    +'   tilts toward the pointer. */\n'
    +wireBadge.toString()+";wireBadge(document.querySelector('.badge-scene'));"}});
 }
+
+/* ── Gatefold folder ───────────────────────────────────────────────────
+   Mechanic reimplemented in vanilla from a gatefold folder recording
+   supplied by the site owner. A disclosure that happens to be a folder:
+   the cover splits and swings outward on two hinges, the document rises
+   from a pocket that sits genuinely in front of it in 3D, and opening the
+   document hands off to a sheet at reading width. Expanding a 300px card
+   only ever produces a 320px card, so it does not try. */
+function wireGatefold(scene){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const gf=scene.querySelector('.gf');
+ const openBtn=gf.querySelector('.gf-open-btn'),closeBtn=gf.querySelector('.gf-close');
+ const doc=gf.querySelector('.gf-doc'),slot=gf.querySelector('.gf-slot');
+ const reader=scene.querySelector('.gf-reader'),back=reader.querySelector('.gf-return');
+ const label=gf.dataset.label||'Folder';
+ let state='shut',timer=0;
+
+ function apply(){const reading=state==='reading',shut=state==='shut';
+  gf.classList.toggle('is-open',!shut);
+  gf.classList.toggle('is-wide',reading);
+  scene.classList.toggle('is-reading',reading);
+  openBtn.setAttribute('aria-expanded',String(!shut));
+  doc.setAttribute('aria-expanded',String(reading));
+  // Closed means closed: out of the tab order and out of the accessibility
+  // tree, not merely invisible. The same holds for the sheet while it is down.
+  slot.setAttribute('aria-hidden',shut?'true':'false');
+  if('inert' in slot)slot.inert=shut; else doc.tabIndex=shut?-1:0;
+  clearTimeout(timer);
+  if(reading){reader.hidden=false;if('inert' in reader)reader.inert=false}
+  else{if('inert' in reader)reader.inert=true;
+   if(reduced.matches)reader.hidden=true;
+   else timer=setTimeout(()=>{if(state!=='reading')reader.hidden=true},420)}}
+
+ function go(next,focusEl){
+  // Measured, not guessed: the sheet's height comes from its own content, so
+  // the scene asks it before growing rather than letting it spill downward.
+  if(next==='reading'){reader.hidden=false;
+   const h=reader.querySelector('.gf-sheet-doc').offsetHeight;
+   scene.style.setProperty('--gf-box',(h+8)+'px')}
+  state=next;apply();
+  if(focusEl)requestAnimationFrame(()=>{
+   if(focusEl.offsetParent!==null||focusEl===back)focusEl.focus()})}
+
+ openBtn.addEventListener('click',()=>go('open',doc));
+ doc.addEventListener('click',()=>go('reading',back));
+ closeBtn.addEventListener('click',()=>go('shut',openBtn));
+ back.addEventListener('click',()=>go('open',doc));
+ scene.addEventListener('keydown',e=>{
+  if(e.key!=='Escape'||state==='shut')return;
+  e.stopPropagation();
+  go(state==='reading'?'open':'shut',state==='reading'?doc:openBtn)});
+
+ const count=gf.querySelectorAll('.gf-doc').length;
+ const sr=openBtn.querySelector('.gf-sr');
+ if(sr)sr.textContent='Open '+label+', '+count+' document'+(count===1?'':'s');
+ const cover=gf.querySelector('.gf-title');
+ if(cover){const b=cover.querySelector('b'),n=cover.querySelector('span');
+  if(b)b.textContent=label;
+  if(n)n.textContent=String(count).padStart(2,'0')+' DOCUMENT'+(count===1?'':'S')}
+ // Off-screen it is idle anyway; a folder left open off-screen should not be
+ // the state you come back to.
+ new IntersectionObserver(es=>{if(!es[0].isIntersecting&&state!=='shut')go('shut')}).observe(scene);
+ apply();
+ return{get state(){return state}}
+}
+const gatefoldCard=document.querySelector('#gatefold');
+if(gatefoldCard){const gatefoldHTML=gatefoldCard.outerHTML;
+ wireGatefold(gatefoldCard);
+ Object.assign(prototypes,{gatefold:{title:'Gatefold folder',
+  html:'<div class="gf-stage">'+gatefoldHTML+'</div>',
+  css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--muted','--honey','--line')
+   +cssFor(/^\.gf-|^\.gf\b|^\.gf\./)
+   +'.gf-stage{display:grid;place-items:center;padding:30px 0 50px}'
+   +'.gf-scene{--gf-w:300px;--gf-h:300px;--gf-lift:104px}',
+  js:'/* Gatefold folder. Mechanic reimplemented in vanilla from a gatefold\n'
+   +'   folder reference: two flaps hinged on their outer edges, a pocket that\n'
+   +'   sits in front of the document in 3D, and a sheet at reading width. */\n'
+   +wireGatefold.toString()+";wireGatefold(document.querySelector('.gf-scene'));"}});
+}
