@@ -575,3 +575,87 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 .orbs-controls button:hover{color:var(--ink)}
 .orbs-controls button[aria-pressed=true]{color:var(--ink);border-color:var(--ink)}
 @media(max-width:760px){.orbs-controls button{min-height:44px;padding:0 14px}}
+
+/* ── Staff badge (002) ─────────────────────────────────────────────────
+   The whole card's type scale is set in em off the sleeve width, so one
+   markup serves the gallery preview, the phone and the exported file at
+   whatever --bw each gives it. calc(var(--bw)/30) and not
+   calc(var(--bw)/300*10px): px divided by px times px is not a length,
+   and the declaration is dropped silently. */
+.badge-preview{perspective-origin:50% 30%}
+.badge-scene{--bw:170px;--drop:44px;perspective:1100px;perspective-origin:50% 34%;
+ width:var(--bw);padding-top:var(--drop);touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.badge-hanger{position:relative;transform-origin:50% 0;transform:rotate(var(--swing,0deg));will-change:transform}
+.cord{position:absolute;left:50%;bottom:100%;width:1px;height:var(--drop);transform:translateX(-50%);
+ background:linear-gradient(180deg,rgba(41,52,60,0),rgba(41,52,60,.34))}
+.cord::before,.cord::after{content:"";position:absolute;bottom:0;width:1.5px;height:34%;
+ background:rgba(41,52,60,.3);transform-origin:50% 0}
+.cord::before{left:0;transform:translateX(-1px) rotate(11deg)}
+.cord::after{left:0;transform:translateX(1px) rotate(-11deg)}
+.badge-sleeve{position:relative;width:var(--bw);aspect-ratio:300/372;border-radius:calc(var(--bw)*.055);
+ background:#eef2f5;font-size:calc(var(--bw) / 30);
+ padding:calc(var(--bw)*.038) calc(var(--bw)*.036) calc(var(--bw)*.05);
+ transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+ transition:transform 620ms cubic-bezier(.22,1,.36,1);user-select:none;-webkit-user-select:none;cursor:grab;
+ box-shadow:0 1px 1px rgba(41,52,60,.1),0 18px 34px rgba(41,52,60,.2),
+  inset 0 0 0 1px rgba(255,255,255,.8),inset 0 0 0 2px rgba(41,52,60,.09)}
+.badge-scene.is-live .badge-sleeve{transition:transform 90ms linear}
+.badge-scene.is-drag .badge-sleeve{cursor:grabbing}
+.badge-sleeve:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+.slot{position:absolute;left:50%;top:calc(var(--bw)*.028);width:calc(var(--bw)*.15);height:calc(var(--bw)*.022);
+ transform:translateX(-50%);border-radius:99px;background:#dde4ea;box-shadow:inset 0 1px 2px rgba(41,52,60,.34)}
+/* Plastic, not glass: a broad specular band plus a highlight that tracks the
+   pointer. Screen blend, so it only ever adds light. */
+.sheen{position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:screen;opacity:.55;
+ background:
+  radial-gradient(circle 130px at var(--gx,50%) var(--gy,30%),rgba(255,255,255,.9),rgba(255,255,255,.12) 55%,rgba(255,255,255,0) 78%),
+  linear-gradient(104deg,rgba(255,255,255,0) 34%,rgba(255,255,255,.5) 44%,rgba(255,255,255,0) 54%);
+ transition:opacity 280ms ease}
+.badge-scene.is-live .sheen{opacity:.95}
+.stock{position:relative;height:100%;border-radius:calc(var(--bw)*.03);background:#f7f9fa;
+ padding:1.5em 1.4em 1.2em;display:flex;flex-direction:column;gap:1.15em;transform:translateZ(6px);
+ box-shadow:0 1px 2px rgba(41,52,60,.12),inset 0 0 0 1px rgba(41,52,60,.1)}
+.crest{display:flex;align-items:center;justify-content:space-between;gap:1em}
+.crest .mark{display:flex;align-items:center;gap:.55em;font:900 1.12em Nunito,Arial,sans-serif;letter-spacing:-.02em;color:var(--ink)}
+.crest .mark svg{display:block;flex:none}
+.crest .org{font:.78em ui-monospace,Menlo,monospace;letter-spacing:.14em;color:#646d76}
+.idrow{display:flex;gap:1.05em;align-items:flex-start}
+.photo{width:9.8em;flex:none;aspect-ratio:4/5;border-radius:.3em;background:#e7edf2;overflow:hidden;
+ display:grid;place-items:center;filter:grayscale(.72) contrast(1.04);
+ box-shadow:inset 0 0 0 1px rgba(41,52,60,.14)}
+.photo svg{width:88%;height:auto;display:block}
+.facts{display:flex;flex-direction:column;gap:.85em;min-width:0;flex:1}
+.stamp{align-self:flex-end;position:relative;overflow:hidden;padding:.42em 2.7em .42em .75em;border-radius:.24em;
+ background:var(--ink);color:var(--paper);font:.76em ui-monospace,Menlo,monospace;letter-spacing:.16em}
+.stamp span{position:relative;z-index:1}
+.stamp::after{content:"";position:absolute;right:0;top:0;bottom:0;width:2.1em;
+ background:repeating-linear-gradient(112deg,var(--honey) 0 .28em,var(--ink) .28em .58em)}
+.fact{display:grid;grid-template-columns:3.4em 1fr;gap:.6em;align-items:baseline;margin:0}
+.fact dt{font:.72em ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#646d76;margin:0}
+.fact dd{margin:0;font:700 .94em Nunito,Arial,sans-serif;letter-spacing:-.01em;line-height:1.25;color:var(--ink)}
+.nameplate{display:flex;align-items:flex-end;justify-content:space-between;gap:.8em;padding:.7em .85em;
+ border-radius:.3em;background:#eef3f7;box-shadow:inset 0 0 0 1px rgba(41,52,60,.09)}
+.nameplate .lab{display:block;margin-bottom:.25em;font:.7em ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#646d76}
+.nameplate .big{font:900 1.5em Nunito,Arial,sans-serif;letter-spacing:-.035em;line-height:1;color:var(--ink)}
+.nameplate .rom{display:block;margin-top:.3em;font:.72em ui-monospace,Menlo,monospace;letter-spacing:.2em;color:#646d76}
+.sig{flex:none;text-align:center}
+.sig svg{display:block;margin:0 auto}
+.sig i{font:.64em ui-monospace,Menlo,monospace;font-style:normal;letter-spacing:.12em;color:#646d76}
+.meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;margin:auto 0 0;border-radius:.3em;overflow:hidden;
+ background:rgba(41,52,60,.11);box-shadow:0 0 0 1px rgba(41,52,60,.11)}
+.meta div{padding:.5em .6em;background:#fff}
+.meta dt{margin:0 0 .25em;font:.64em ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#646d76}
+.meta dd{margin:0;font:700 .78em ui-monospace,Menlo,monospace;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.footer-tape{position:relative;height:1.55em;border-radius:.24em;background:var(--ink);overflow:hidden;
+ display:flex;align-items:center;justify-content:center}
+.footer-tape span{z-index:1;font:.66em ui-monospace,Menlo,monospace;letter-spacing:.2em;color:#9fb3c2}
+.footer-tape::before,.footer-tape::after{content:"";position:absolute;top:0;bottom:0;width:3.1em;
+ background:repeating-linear-gradient(112deg,#4a5a67 0 .26em,var(--ink) .26em .56em)}
+.footer-tape::before{left:0}
+.footer-tape::after{right:0}
+/* The preview is 240px on a phone, so the badge and its lanyard have to fit
+   inside that rather than the 280 they get on a desktop card. */
+/* Small enough that the full swing still clears a 240px preview, rather than
+   clamping the swing down to fit a bigger badge. */
+@media(max-width:600px){.badge-scene{--bw:132px;--drop:30px}}
+@media(prefers-reduced-motion:reduce){.badge-sleeve,.sheen{transition:none!important}}
