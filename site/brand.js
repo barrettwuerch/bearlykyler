@@ -1023,3 +1023,157 @@ if(gatefoldCard){const gatefoldHTML=gatefoldCard.outerHTML.replace(' data-pane="
    +'   sits in front of the document in 3D, and a sheet at reading width. */\n'
    +wireGatefold.toString()+";wireGatefold(document.querySelector('.gf-scene'));"}});
 }
+
+/* ── Rain ───────────────────────────────────────────────────────────────
+   Technique from a p5 rain sketch supplied by the site owner, reimplemented
+   in vanilla. The idea it is built on: one drop accelerates down to a point
+   on a ground plane and hands off to a short stack of rings.
+
+   Two things are done differently, both because the sketch counts frames.
+   Timers here run on elapsed seconds, so a 120Hz screen shows the same
+   weather as a 60Hz one rather than twice as much of it; and the rings are
+   spawned on impact instead of being created up front with a negative timer,
+   which is the same thing with none of the bookkeeping. */
+function wireRain(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ // The site's own colours rather than the sketch's carnival, weighted so that
+ // honey stays an accent instead of being a seventh of the weather.
+ const COLOURS=['#48a8ee','#48a8ee','#48a8ee','#3e92d0','#3e92d0','#e6f5ff','#fcfdfd','#ffc33d'];
+ const RATE=27,CAP=420,FALL=1.05,RING_LIFE=.8,RINGS=4,RING_GAP=.075;
+
+ const canvas=root.querySelector('.rain-canvas'),ctx=canvas.getContext('2d');
+ let w=0,h=0,S=1,drops=[],rings=[],last=0,frame=0,inView=false,carry=0;
+ // One seam for randomness, so the still frame can be produced by running the
+ // real simulation on a seeded stream instead of being posed by hand.
+ let rand=Math.random;
+ const rnd=(a,b)=>a+rand()*(b-a);
+ const pick=()=>COLOURS[(rand()*COLOURS.length)|0];
+
+ // One ground plane for the whole scene: how far down the panel a drop lands
+ // is how near it is, and near things are bigger and less foreshortened. The
+ // sketch scales size by depth; carrying the same number into the ring's
+ // squash is what keeps the floor reading as one surface.
+ function burst(x,y,col){
+  const d=Math.max(0,Math.min(1,y/h)),size=(.07+.23*d)*h;
+  drops.push({x,y,d,size,col:col||pick(),t:0,life:FALL*rnd(.88,1.12)})}
+
+ function land(drop){
+  for(let i=0;i<RINGS;i++)
+   rings.push({x:drop.x,y:drop.y,d:drop.d,col:drop.col,t:-i*RING_GAP,
+    life:RING_LIFE*rnd(.85,1.15),max:drop.size*rnd(.9,1.15),weight:drop.size*.035})}
+
+ function step(dt){
+  // Rain per square, not rain per second: the panel is half the area on a
+  // phone, and a fixed spawn rate turned that into a downpour.
+  carry+=dt*RATE*Math.min(1.25,(w*h)/114000);
+  while(carry>=1){carry-=1;
+   if(drops.length+rings.length<CAP)burst(rnd(0,w),rnd(h*.12,h))}
+  for(let i=drops.length-1;i>=0;i--){const o=drops[i];o.t+=dt;
+   if(o.t>=o.life){land(o);drops.splice(i,1)}}
+  for(let i=rings.length-1;i>=0;i--){const o=rings[i];o.t+=dt;
+   if(o.t>=o.life)rings.splice(i,1)}}
+
+ function drawDrop(o){
+  const p=Math.max(0,Math.min(1,o.t/o.life));
+  // Squared, so it is still gathering speed when it hits — and the streak is
+  // stretched by that speed rather than by a constant, so the drop looks like
+  // it is falling instead of sliding.
+  const y=(o.y-h)+h*p*p,stretch=1+1.6*p;
+  ctx.fillStyle=o.col;ctx.globalAlpha=.94;
+  ctx.beginPath();
+  ctx.ellipse(o.x,y,o.size*.034,o.size*.1*stretch,0,0,6.2832);
+  ctx.fill()}
+
+ function drawRing(o){
+  if(o.t<0)return;
+  const p=Math.max(0,Math.min(1,o.t/o.life)),e=Math.sqrt(p);
+  // The ring keeps its weight and its colour most of the way out and then
+  // goes, rather than thinning linearly: a stroke carried to nothing spends
+  // its last third as a grey smudge on the dark, which reads as dirt.
+  const r=o.max*e/2,weight=o.weight*(1-p*p);
+  if(weight<=.35)return;
+  ctx.strokeStyle=o.col;ctx.globalAlpha=Math.max(0,1-p*p*p);ctx.lineWidth=weight;
+  ctx.beginPath();
+  ctx.ellipse(o.x,o.y,r,r*(.16+.2*o.d),0,0,6.2832);
+  ctx.stroke()}
+
+ function draw(){
+  ctx.clearRect(0,0,w,h);
+  for(const o of rings)drawRing(o);
+  for(const o of drops)drawDrop(o);
+  ctx.globalAlpha=1}
+
+ // Something to look at when the loop never runs. Two and a bit seconds of the
+ // real simulation on a fixed seed, rather than a tableau posed by hand: the
+ // frame is then honestly a frame of this weather, and the same one every time.
+ function still(){
+  drops=[];rings=[];carry=0;
+  let seed=20260911;
+  rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  for(let i=0;i<136;i++)step(1/60);
+  rand=Math.random;
+  draw()}
+
+ // A cold start is a second of empty sky, because the first drop has a second
+ // of falling to do. Opening mid-weather costs eighty simulated frames and no
+ // allocation the loop would not have made a moment later anyway.
+ function prime(){if(drops.length+rings.length)return;
+  for(let i=0;i<84;i++)step(1/60)}
+
+ function loop(now){const dt=Math.min(.05,(now-(last||now))/1000);last=now;
+  step(dt);draw();frame=requestAnimationFrame(loop)}
+
+ function sync(){const on=inView&&!document.hidden&&!reduced.matches&&w>0;
+  if(on&&!frame){last=0;prime();draw();frame=requestAnimationFrame(loop)}
+  else if(!on){cancelAnimationFrame(frame);frame=0;last=0;
+   if(reduced.matches&&w>0)still()}}
+
+ function size(){const r=root.getBoundingClientRect();
+  if(!r.width||!r.height)return;
+  const dpr=Math.min(devicePixelRatio||1,2);
+  w=r.width;h=r.height;S=h/226;
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(reduced.matches)still();else{prime();draw()}}
+
+ // Placing one by hand is the whole reason this is a control and not a
+ // picture.
+ function place(x,y){
+  burst(x,Math.max(h*.12,Math.min(h,y)));
+  // With motion off there is no fall to watch, and a drop spends frame zero
+  // above the top edge — so it lands at once and leaves its rings instead. A
+  // press has to produce something either way.
+  if(!reduced.matches)return;
+  land(drops.pop());
+  const fresh=rings.slice(-RINGS);
+  fresh.forEach((r,i)=>{r.t=r.life*(.5-i*.11)});
+  draw()}
+ root.addEventListener('pointerdown',e=>{const r=root.getBoundingClientRect();
+  place(e.clientX-r.left,e.clientY-r.top)});
+ // A keyboard press has no pointer, so it lands somewhere in the near middle.
+ root.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  e.preventDefault();place(w*rnd(.25,.75),h*rnd(.45,.9))});
+
+ new ResizeObserver(size).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();if(reduced.matches)still()});
+ size();sync();
+ return{place,get count(){return drops.length+rings.length}}
+}
+const rainCard=document.querySelector('#rain-demo');
+if(rainCard){const rainHTML=rainCard.outerHTML;
+ wireRain(rainCard);
+ Object.assign(prototypes,{rain:{title:'Rain',html:rainHTML,
+  // The panel is pinned to its card on the site, so the standalone copy has to
+  // let the insets go — left on, it positions itself against the viewport.
+  css:'*{box-sizing:border-box}'+cssFor(/^\.rain/)
+   +'.rain{position:relative;inset:auto;width:min(560px,90vw);height:320px;margin:0}',
+  js:'/* Rain. Technique from a p5 rain sketch supplied by the site owner,\n'
+   +'   reimplemented in vanilla: a drop accelerates down to a point on a\n'
+   +'   ground plane and hands off to a short stack of rings that chase each\n'
+   +'   other out. Timers run on elapsed seconds rather than frame counts, so\n'
+   +'   a 120Hz screen shows the same weather as a 60Hz one. */\n'
+   +wireRain.toString()+";wireRain(document.querySelector('.rain'));"}});
+}
