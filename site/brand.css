@@ -659,3 +659,16 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
    clamping the swing down to fit a bigger badge. */
 @media(max-width:600px){.badge-scene{--bw:132px;--drop:30px}}
 @media(prefers-reduced-motion:reduce){.badge-sleeve,.sheen{transition:none!important}}
+
+/* ── Play wave hit area ────────────────────────────────────────────────
+   The button measured 114x43 but only ten of fifteen points across it
+   actually reached it: .specimen-title carries z-index:1 and its <em>
+   overlapped the button, so a third of the clicks landed on decorative
+   display text. The title is decoration and should never take a pointer.
+   The button then gets a hit area larger than its ink, grown with an
+   overlay so the text does not shift. */
+.specimen-title{pointer-events:none}
+.play-button{position:absolute;z-index:2}
+.play-button::before{content:"";position:absolute;inset:-10px -20px;border-radius:999px}
+.play-button:focus-visible{outline:2px solid var(--amber);outline-offset:6px;border-radius:999px}
+@media(max-width:760px){.play-button::before{inset:-12px -22px}}
