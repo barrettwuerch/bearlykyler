@@ -97,6 +97,12 @@ island:{title:'Status island',html:islandHTML,css:'*{box-sizing:border-box}'+var
 /* Magnetic button, marquee and count-up. Vanilla builds for this site. */
 function wireMagnetic(button){const reduced=matchMedia('(prefers-reduced-motion: reduce)'),hover=matchMedia('(hover: hover) and (pointer: fine)');
  const label=button.querySelector('.magnetic-label');let x=0,y=0,vx=0,vy=0,tx=0,ty=0,raf=0,last=0;
+ // A finger is the pointer on a phone, so the surface it moves across becomes
+ // the ring a cursor would have crossed: drag anywhere on the stage and the
+ // button leans your way. Tapping holds that lean long enough to read.
+ const stage=button.closest('.magnetic-stage')||button.parentElement;
+ const TAP_SLOP=10,TAP_TIME=500,TAP_HOLD=380;
+ let hold=0,downX=0,downY=0,downAt=0;
  // Same critically-damped spring the card tilt uses, so the two read as one
  // piece of hardware.
  function tick(now){const dt=Math.min((now-(last||now))/1000,.032)||.016;last=now;
@@ -106,15 +112,42 @@ function wireMagnetic(button){const reduced=matchMedia('(prefers-reduced-motion:
   if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(vx)+Math.abs(vy)>.02)raf=requestAnimationFrame(tick);
   else{raf=0;if(!tx&&!ty){button.style.transform='';if(label)label.style.transform=''}}}
  const start=()=>{if(!raf){last=0;raf=requestAnimationFrame(tick)}};
- const rest=()=>{tx=ty=0;if(reduced.matches||!hover.matches){cancelAnimationFrame(raf);raf=0;x=y=vx=vy=0;button.style.transform='';if(label)label.style.transform=''}else start()};
+ // Springs home. The hard reset is for reduced motion only: it used to fire on
+ // any device that could not hover, which would now snap the button back the
+ // instant a finger lifted instead of letting it settle.
+ const rest=()=>{clearTimeout(hold);hold=0;tx=ty=0;
+  if(reduced.matches){cancelAnimationFrame(raf);raf=0;x=y=vx=vy=0;button.style.transform='';if(label)label.style.transform=''}else start()};
+ // The pull itself, shared by cursor and finger. A finger gets a wider reach
+ // and a stronger pull than a cursor: it arrives without the approach that
+ // makes the effect legible, and it covers the button once it lands.
+ const CURSOR={reach:90,factor:.42},FINGER={reach:160,factor:.62};
+ const pullToward=(cx,cy,feel)=>{const box=button.getBoundingClientRect(),dx=cx-(box.left+box.width/2),dy=cy-(box.top+box.height/2);
+  const distance=Math.hypot(dx,dy),reach=Math.max(box.width,box.height)/2+feel.reach;
+  if(distance>reach){if(tx||ty){tx=ty=0;start()}return}
+  const pull=1-distance/reach;tx=dx*pull*feel.factor;ty=dy*pull*feel.factor;start()};
  // Tracked from a ring around the button rather than from inside it, so the
  // pull starts before the cursor ever arrives.
  window.addEventListener('pointermove',e=>{if(reduced.matches||!hover.matches||e.pointerType==='touch')return;
-  const box=button.getBoundingClientRect(),dx=e.clientX-(box.left+box.width/2),dy=e.clientY-(box.top+box.height/2);
-  const distance=Math.hypot(dx,dy),reach=Math.max(box.width,box.height)/2+90;
-  if(distance>reach){if(tx||ty){tx=ty=0;start()}return}
-  const pull=1-distance/reach;tx=dx*pull*.42;ty=dy*pull*.42;start()});
- document.addEventListener('pointerleave',rest);window.addEventListener('blur',rest);
+  pullToward(e.clientX,e.clientY,CURSOR)});
+ if(stage){
+  stage.addEventListener('pointerdown',e=>{if(reduced.matches||e.pointerType!=='touch')return;
+   clearTimeout(hold);hold=0;downX=e.clientX;downY=e.clientY;downAt=e.timeStamp;pullToward(e.clientX,e.clientY,FINGER)});
+  stage.addEventListener('pointermove',e=>{if(reduced.matches||e.pointerType!=='touch')return;
+   clearTimeout(hold);hold=0;pullToward(e.clientX,e.clientY,FINGER)});
+  stage.addEventListener('pointerup',e=>{if(e.pointerType!=='touch')return;
+   const still=Math.abs(e.clientX-downX)<=TAP_SLOP&&Math.abs(e.clientY-downY)<=TAP_SLOP;
+   // A tap ends the moment it lands, so without the hold the button would be
+   // travelling home before it ever arrived.
+   if(still&&e.timeStamp-downAt<=TAP_TIME&&!reduced.matches){clearTimeout(hold);hold=setTimeout(rest,TAP_HOLD)}
+   else rest()});
+  // pointercancel is the browser taking the gesture for a scroll.
+  stage.addEventListener('pointercancel',rest);
+ }
+ // A touch pointer stops existing when the finger lifts, so the document
+ // reports it leaving one frame after pointerup — honouring that here cancelled
+ // the tap's hold before the button had travelled anywhere. Leaving is a mouse idea.
+ document.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')rest()});
+ window.addEventListener('blur',rest);
  reduced.addEventListener('change',rest);hover.addEventListener('change',rest);
 }
 function wireMarquee(root){const track=root.querySelector('.marquee-track');
@@ -141,7 +174,7 @@ const magnet=document.querySelector('#magnetic-demo'),marquee=document.querySele
 const magnetHTML=magnet.outerHTML,marqueeHTML=marquee.outerHTML,counterHTML=counter.outerHTML;
 wireMagnetic(magnet);wireMarquee(marquee);wireCount(counter);
 Object.assign(prototypes,{
-magnetic:{title:'Magnetic button',html:magnetHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--amber')+cssFor(/^\.magnetic/),js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
+magnetic:{title:'Magnetic button',html:'<div class="magnetic-stage">'+magnetHTML+'</div>',css:'*{box-sizing:border-box}'+varsFor('--ink','--paper','--amber')+cssFor(/^\.magnetic/)+'.magnetic-stage{display:grid;place-items:center;width:min(340px,90vw);height:260px}',js:wireMagnetic.toString()+";wireMagnetic(document.querySelector('.magnetic'));"},
 marquee:{title:'Marquee',html:marqueeHTML,css:'*{box-sizing:border-box}body{display:block!important;padding:40px 0}'+varsFor('--muted','--amber')+cssFor(/^\.marquee|^marquee-run$/),js:wireMarquee.toString()+";wireMarquee(document.querySelector('.marquee'));"},
 counter:{title:'Count up',html:counterHTML,css:'*{box-sizing:border-box}'+varsFor('--ink','--muted')+cssFor(/^\.counter/),js:wireCount.toString()+";wireCount(document.querySelector('.counter'));"}});
 

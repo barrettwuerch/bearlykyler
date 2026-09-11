@@ -114,6 +114,10 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
    little further, so the face reads as sitting slightly proud of the pill. */
 .magnetic{display:inline-flex;align-items:center;justify-content:center;padding:15px 27px;border:0;border-radius:999px;background:var(--ink);color:var(--paper);font:700 13px Nunito,Arial,sans-serif;cursor:pointer}
 .magnetic-label{display:inline-block;pointer-events:none}
+/* The stage is the finger's version of the ring a cursor crosses. pan-y, not
+   none: a vertical swipe stays the page's, so the demo is never a hole in the
+   scroll — the same trade the tilt card makes. */
+.magnetic-stage{touch-action:pan-y}
 .magnetic:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
 
 /* Marquee. The track is duplicated so the loop closes on itself; both copies
