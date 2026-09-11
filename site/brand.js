@@ -1,16 +1,8 @@
-const save=document.querySelector('#save-demo');
-function wireSave(button){let timer;button.addEventListener('click',()=>{if(button.disabled)return;button.disabled=true;button.querySelector('span').textContent='Saving…';button.querySelector('.button-icon').textContent='·';timer=setTimeout(()=>{button.classList.add('done');button.querySelector('span').textContent='Saved';button.querySelector('.button-icon').textContent='✓';timer=setTimeout(()=>{button.classList.remove('done');button.querySelector('span').textContent='Save changes';button.querySelector('.button-icon').textContent='↗';button.disabled=false},1300)},750)});}
-function wireTabs(group){const buttons=[...group.querySelectorAll('button')];function select(button){buttons.forEach(b=>{b.setAttribute('aria-selected',String(b===button));b.tabIndex=b===button?0:-1})}buttons.forEach((b,i)=>{b.addEventListener('click',()=>select(b));b.addEventListener('keydown',e=>{let n;if(e.key==='ArrowRight')n=(i+1)%buttons.length;if(e.key==='ArrowLeft')n=(i+buttons.length-1)%buttons.length;if(e.key==='Home')n=0;if(e.key==='End')n=buttons.length-1;if(n!==undefined){e.preventDefault();select(buttons[n]);buttons[n].focus()}})})}
-function wireToggle(button){button.addEventListener('click',()=>button.setAttribute('aria-checked',String(button.getAttribute('aria-checked')!=='true')))}
-wireSave(save);wireTabs(document.querySelector('.tabs'));wireToggle(document.querySelector('#quiet-demo'));
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button))});document.querySelectorAll('[data-category]').forEach(card=>card.hidden=button.dataset.filter!=='all'&&card.dataset.category!==button.dataset.filter)}));
 const demo=document.querySelector('#bear-demo');document.querySelector('#play-bear').addEventListener('click',()=>{demo.currentTime=0;demo.play().catch(()=>{})});
 const common='body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #247ab6;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}';
-const prototypes={
-button:{title:'Loading button',html:save.outerHTML,css:'.save-button{min-width:165px;display:flex;justify-content:space-between;gap:25px;background:#29343c;color:white;border:1px solid #29343c;border-radius:8px;padding:14px 18px;font-size:13px;transition:background .2s,transform .12s}.save-button:active{transform:scale(.97)}.save-button.done{background:#247ab6;border-color:#247ab6}',js:wireSave.toString()+";wireSave(document.querySelector('button'));"},
-tabs:{title:'Segmented control',html:document.querySelector('.tabs').outerHTML,css:'.tabs{display:flex;padding:5px;background:#e6f5ff;border:1px solid #e2e0d9;border-radius:10px}.tabs button{width:80px;padding:10px;border:0;background:transparent;border-radius:6px;font-size:13px;color:#888078;transition:background .2s,color .2s}.tabs button[aria-selected=true]{background:white;color:#29343c}',js:wireTabs.toString()+";wireTabs(document.querySelector('.tabs'));"},
-toggle:{title:'Toggle study',html:document.querySelector('.toggle-row').outerHTML,css:'.toggle-row{display:flex;align-items:center;gap:65px;font-size:14px}.toggle{width:57px;height:33px;padding:4px;border:0;border-radius:30px;background:#d9d6cf;transition:background .25s}.toggle>span{display:block;width:25px;height:25px;background:white;border-radius:50%;transition:transform .3s}.toggle[aria-checked=true]{background:#ffc33d}.toggle[aria-checked=true]>span{transform:translateX(24px)}',js:wireToggle.toString()+";wireToggle(document.querySelector('button'));"}}
-Object.assign(prototypes,{wave:{title:'Bear wave — original animation',file:'components/bear-wave.html'},'name-tag':{title:'Name tag',file:'components/name-tag.html'},'pixel-loader':{title:'Pixel loader',file:'components/pixel-loader.html'},closingdoor:{title:'Closing door',file:'components/closingdoor.html'}});
+const prototypes={};
+Object.assign(prototypes,{wave:{title:'Bear wave — original animation',file:'components/bear-wave.html'},'name-tag':{title:'Name tag',file:'components/name-tag.html'},closingdoor:{title:'Closing door',file:'components/closingdoor.html'}});
 const dialog=document.querySelector('#source-dialog');let selectedCode='',selectedName='';
 /* The card actions are icon-only now, so feedback goes to the accessible name
    and a class that swaps the glyph — writing textContent would delete the icon. */
@@ -530,3 +522,74 @@ wireGravity(gravity);wireReveal(grid);
 Object.assign(prototypes,{
 gravity:{title:'Gravity letters',html:gravityHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted')+cssFor(/^\.gravity/)+'.gravity{position:relative;width:min(90vw,460px);height:300px;border-radius:14px;background:#eef3f8}',js:wireGravity.toString()+";wireGravity(document.querySelector('.gravity'));"},
 reveal:{title:'Grid reveal',html:gridHTML,css:'*{box-sizing:border-box}'+varsFor('--line','--muted','--ink')+cssFor(/^\.reveal/),js:wireReveal.toString()+";wireReveal(document.querySelector('.reveal'));"}});
+
+/* Card hover tilt, matrix dot loader and accordion expand, from the
+   transitions.dev snippets supplied by the site owner. */
+function wireTilt(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const card=root.querySelector('.t-tilt-card'),LIMIT=11;let frame=0,px=0,py=0;
+ // Read the pointer against the OUTER wrapper, which never transforms — measuring
+ // the card while it tilts would feed its own rotation back into the input.
+ function apply(){frame=0;const box=root.getBoundingClientRect();
+  const x=Math.min(Math.max((px-box.left)/box.width,0),1),y=Math.min(Math.max((py-box.top)/box.height,0),1);
+  root.style.setProperty('--tilt-ry',((x-.5)*2*LIMIT).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-rx',((.5-y)*2*LIMIT).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-gx',(x*100).toFixed(1)+'%');
+  root.style.setProperty('--tilt-gy',(y*100).toFixed(1)+'%')}
+ function track(e){if(reduced.matches)return;px=e.clientX;py=e.clientY;
+  root.classList.add('is-hover');card.classList.add('is-tilting');
+  if(!frame)frame=requestAnimationFrame(apply)}
+ function rest(){cancelAnimationFrame(frame);frame=0;
+  root.classList.remove('is-hover');card.classList.remove('is-tilting');
+  root.style.setProperty('--tilt-rx','0deg');root.style.setProperty('--tilt-ry','0deg')}
+ root.addEventListener('pointermove',track);
+ root.addEventListener('pointerdown',e=>{root.setPointerCapture?.(e.pointerId);track(e)});
+ for(const type of ['pointerleave','pointerup','pointercancel'])root.addEventListener(type,rest);
+ reduced.addEventListener('change',()=>{if(reduced.matches)rest()});
+}
+function wireMatrix(root){const grid=root.querySelector('.t-matrix');
+ const dots=Array.from({length:16},()=>{const i=document.createElement('i');grid.append(i);return i});
+ // A variant is just a table of delays into the one shared colour cycle.
+ const CYCLE=1200,RING=[1,2,7,11,14,13,8,4],CENTRE=[5,6,9,10],CORNERS=[0,3,12,15];
+ const TWINKLE=[7,2,11,5,14,9,0,12,3,15,6,10,13,1,8,4];
+ const tables={
+  scan:i=>[i%4*CYCLE/10,false],
+  twinkle:i=>[TWINKLE.indexOf(i)*CYCLE/16,false],
+  orbit:i=>RING.includes(i)?[RING.indexOf(i)*CYCLE/8,false]:[0,true],
+  pulse:i=>[CENTRE.includes(i)?0:CYCLE*.16,false]};
+ let variant='scan',rounded=false;
+ function paint(){const table=tables[variant];
+  dots.forEach((dot,i)=>{const [delay,still]=table(i);
+   dot.style.setProperty('--d',Math.round(delay));
+   dot.classList.toggle('is-still',still);
+   dot.classList.toggle('is-gap',rounded&&CORNERS.includes(i))});
+  grid.dataset.variant=variant}
+ for(const button of root.querySelectorAll('[data-matrix]'))button.addEventListener('click',()=>{
+  variant=button.dataset.matrix;
+  root.querySelectorAll('[data-matrix]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+  paint()});
+ const round=root.querySelector('[data-matrix-round]');
+ round.addEventListener('click',()=>{rounded=!rounded;round.setAttribute('aria-pressed',String(rounded));paint()});
+ paint();
+}
+function wireAcc(root){const items=[...root.querySelectorAll('.t-acc')];
+ const set=(item,open)=>{item.dataset.open=String(open);
+  item.querySelector('.t-acc-head').setAttribute('aria-expanded',String(open))};
+ for(const item of items)item.querySelector('.t-acc-head').addEventListener('click',()=>{
+  const open=item.dataset.open!=='true';
+  // One at a time: three open panels are taller than the card preview, and
+  // this is what people expect an accordion to do anyway.
+  for(const other of items)if(other!==item)set(other,false);
+  set(item,open)})}
+const tilt=document.querySelector('#tilt-demo'),matrix=document.querySelector('#matrix-demo'),acc=document.querySelector('#acc-demo');
+const tiltHTML=tilt.outerHTML,matrixHTML=matrix.outerHTML,accHTML=acc.outerHTML;
+wireTilt(tilt);wireMatrix(matrix);wireAcc(acc);
+Object.assign(prototypes,{
+// The exported file stands alone, so the portrait becomes a plain block rather
+// than an <img> pointing at a bear that is not next to it.
+tilt:{title:'Card hover tilt',html:tiltHTML.replace(/<img[^>]*>/,'<div class="t-tilt-shim"></div>'),
+ css:'*{box-sizing:border-box}'+varsFor('--amber','--muted')+cssFor(/^\.t-tilt/)+'.t-tilt-shim{width:112px;height:112px;margin:0 auto 10px;border-radius:10px;background:#f4f7fa}',
+ js:wireTilt.toString()+";wireTilt(document.querySelector('.t-tilt'));"},
+matrix:{title:'Matrix dot loader',html:matrixHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink','--line')+cssFor(/^\.t-matrix|^\.matrix-|^t-matrix-pulse$/),
+ js:wireMatrix.toString()+";wireMatrix(document.querySelector('.matrix-demo'));"},
+acc:{title:'Accordion expand',html:accHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink','--line')+cssFor(/^\.t-acc|^\.acc-demo/),
+ js:wireAcc.toString()+";wireAcc(document.querySelector('.acc-demo'));"}});

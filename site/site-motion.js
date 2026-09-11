@@ -4,6 +4,9 @@
  const reduced=matchMedia('(prefers-reduced-motion: reduce)'),hover=matchMedia('(hover: hover) and (pointer: fine)');
  // Stable outer bounds prevent the moving card from feeding back into its input.
  document.querySelectorAll('.card').forEach(card=>{
+  // The tilt demo does its own tilting; nesting this one inside it would
+  // compound two rotations driven by the same pointer.
+  if(card.querySelector('.t-tilt'))return;
   const surface=card.querySelector('.preview');let x=0,y=0,vx=0,vy=0,tx=0,ty=0,raf=0,last=0;
   const glare=document.createElement('span');glare.className='card-glare';glare.setAttribute('aria-hidden','true');surface.append(glare);
   function tick(now){const dt=Math.min((now-(last||now))/1000,.032)||.016;last=now;

@@ -324,3 +324,73 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
  .collection .card .preview,.collection .card .component-preview,.collection .featured .preview{height:240px}
  .collection .card .component-preview iframe{height:309px}
 }
+
+/* ── Card hover tilt, matrix dot loader, accordion expand ──────────────
+   From transitions.dev, supplied by the site owner. Two changes were
+   needed to sit in this stylesheet: the variables are scoped to each
+   component rather than declared on :root — this file already defines
+   :root twice and the later one wins, which is exactly how the preview
+   colours drifted — and the loader's dot size became a variable, since a
+   4x4 grid of 2px dots is fourteen pixels across and vanishes in a card. */
+
+.t-tilt{
+ --tilt-perspective:1000px;--tilt-return:1000ms;--tilt-return-ease:cubic-bezier(.22,1,.36,1);
+ --tilt-follow:400ms;--tilt-follow-ease:cubic-bezier(.22,1,.36,1);
+ --tilt-glare-opacity:.32;--tilt-glare-fade:300ms;--tilt-glare-ease:cubic-bezier(.22,1,.36,1);
+ /* The outer wrapper is the flat hit area; touch-action:none lets a finger
+    drag the card instead of scrolling the page. */
+ touch-action:none}
+.t-tilt-card{position:relative;border-radius:12px;overflow:hidden;
+ transform:perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx,0deg)) rotateY(var(--tilt-ry,0deg));
+ transform-style:preserve-3d;transition:transform var(--tilt-return) var(--tilt-return-ease);will-change:transform}
+/* A short linear follow while the pointer moves, so the tilt tracks 1:1. */
+.t-tilt-card.is-tilting{transition:transform var(--tilt-follow) var(--tilt-follow-ease)}
+/* The glare adds like light, so it only reads on a dark face — that is why
+   this demo card is ink rather than paper. */
+.t-tilt-glare{position:absolute;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;
+ background:
+  radial-gradient(circle 95px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.48),rgba(255,255,255,.06) 52%,rgba(255,255,255,0) 84%),
+  radial-gradient(circle 200px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.22),rgba(255,255,255,.04) 58%,rgba(255,255,255,0) 78%),
+  radial-gradient(circle 360px at var(--tilt-gx,50%) var(--tilt-gy,50%),rgba(255,255,255,.1),rgba(255,255,255,0) 88%);
+ transition:opacity var(--tilt-glare-fade) var(--tilt-glare-ease)}
+.t-tilt.is-hover .t-tilt-glare{opacity:var(--tilt-glare-opacity)}
+.t-tilt-card{width:178px;padding:14px 14px 16px;background:#242e36;color:#eef3f7;text-align:center;box-shadow:0 18px 34px rgba(41,52,60,.28)}
+.t-tilt-card img{display:block;width:112px;height:112px;margin:0 auto 10px;border-radius:10px;background:#f4f7fa}
+.t-tilt-name{display:block;font:800 15px Nunito,Arial,sans-serif;letter-spacing:-.2px}
+.t-tilt-role{display:block;margin-top:2px;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1.4px;color:#9fb3c2}
+
+.t-matrix{--matrix-cycle:1200ms;--matrix-dot:9px;--matrix-base:#c3d2de;--matrix-active:var(--amber);--matrix-ease:ease-in-out;
+ display:grid;grid-template-columns:repeat(4,var(--matrix-dot));grid-auto-rows:var(--matrix-dot);gap:var(--matrix-dot)}
+.t-matrix i{display:block;background:var(--matrix-base);animation:t-matrix-pulse var(--matrix-cycle) var(--matrix-ease) infinite;animation-delay:calc(var(--d,0) * 1ms)}
+/* Hole positions render nothing. */
+.t-matrix i.is-gap{visibility:hidden;animation:none}
+@keyframes t-matrix-pulse{0%,45%,100%{background-color:var(--matrix-base)}15%{background-color:var(--matrix-active)}}
+.matrix-demo{display:flex;flex-direction:column;align-items:center;gap:18px}
+.matrix-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:232px}
+.matrix-controls button{border:1px solid var(--line);border-radius:999px;background:#fff;padding:5px 11px;font:600 11px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer;transition:color .15s,border-color .15s}
+.matrix-controls button[aria-pressed=true]{color:var(--ink);border-color:var(--ink)}
+
+.t-acc{--acc-expand:250ms;--acc-collapse:250ms;--acc-chevron:250ms;--acc-ease:cubic-bezier(.22,1,.36,1)}
+/* grid-template-rows 0fr to 1fr animates height with no JS measurement. */
+.t-acc-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--acc-collapse) var(--acc-ease)}
+.t-acc[data-open=true] .t-acc-panel{grid-template-rows:1fr;transition:grid-template-rows var(--acc-expand) var(--acc-ease)}
+.t-acc-panel-inner{overflow:hidden;opacity:0;filter:blur(2px);transition:opacity var(--acc-collapse) var(--acc-ease),filter var(--acc-collapse) var(--acc-ease)}
+.t-acc[data-open=true] .t-acc-panel-inner{opacity:1;filter:blur(0);transition:opacity var(--acc-expand) var(--acc-ease),filter var(--acc-expand) var(--acc-ease)}
+/* scaleY(-1) turns the "v" into a "^" through a flat midpoint — the same look
+   as a path morph, but it animates outside Chromium too. */
+.t-acc-chevron{display:inline-flex;transform:scaleY(1);transform-origin:center;transition:transform var(--acc-chevron) var(--acc-ease)}
+.t-acc-chevron path{vector-effect:non-scaling-stroke}
+.t-acc[data-open=true] .t-acc-chevron{transform:scaleY(-1)}
+.acc-demo{display:flex;flex-direction:column;gap:8px;width:252px}
+.t-acc{border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px rgba(41,52,60,.08)}
+.t-acc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:11px 14px;border:0;background:none;font:700 13px Nunito,Arial,sans-serif;color:var(--ink);text-align:left;cursor:pointer}
+.t-acc-head:focus-visible{outline:2px solid var(--amber);outline-offset:-2px;border-radius:12px}
+.t-acc-chevron svg{width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.t-acc-panel-inner p{margin:0;padding:0 14px 13px;font-size:12.5px;line-height:1.55;color:var(--muted)}
+
+@media(prefers-reduced-motion:reduce){
+ .t-tilt-card{transform:none!important;transition:none!important}
+ .t-matrix i{animation:none!important}
+ .t-acc-panel,.t-acc-panel-inner,.t-acc-chevron{transition:none!important}
+}
+.t-matrix i.is-still{animation:none}
