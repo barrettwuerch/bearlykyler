@@ -1177,3 +1177,126 @@ if(rainCard){const rainHTML=rainCard.outerHTML;
    +'   a 120Hz screen shows the same weather as a 60Hz one. */\n'
    +wireRain.toString()+";wireRain(document.querySelector('.rain'));"}});
 }
+
+/* ── Point cloud ────────────────────────────────────────────────────────
+   Technique from a p5 sketch supplied by the site owner, reimplemented in
+   vanilla. The sketch's own trick is kept intact and it is a good one: using
+   a point's index as an angle, cos(i*i) picks a latitude and sin(i*i) the
+   radius of that latitude's circle, so thousands of points land spread over a
+   sphere with no random numbers and nothing stored per point.
+
+   What is done differently is all arithmetic:
+
+   - The sketch recomputes sin(i*i) and cos(i*i) for every point on every
+     frame, roughly a million calls a second to produce numbers that never
+     change. They are computed once here, and the frame's rotation comes out of
+     the angle-sum identity, so the inner loop has no trig in it at all.
+   - The sketch's timers are frames: it spins by 0.01 and damps by 0.9 per
+     frame, so a 120Hz screen spins twice as fast and settles differently. The
+     physics runs on a fixed 60Hz step here, whatever the display does.
+   - Mouse only means no repulsion on a phone, and the sketch's user-agent
+     sniff is the thing that breaks on the next tablet. Pointer events cover
+     both without asking what the device is. */
+function wireCloud(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const SPRING=.01,DAMP=.9,PUSH=28,SPIN=.01,STEP=1/60;
+ // Grain, not a count. The sketch puts the same eight thousand points in a
+ // 360px phone canvas as in a 900px desktop one, which is the difference
+ // between a cloud and a solid disc. Points spread over the sphere, so the
+ // number follows the sphere's area — its radius squared — and the density
+ // the site owner chose on a 340px panel holds at every size.
+ const AT=6800,FOR=340;
+ const canvas=root.querySelector('.cloud-canvas'),ctx=canvas.getContext('2d');
+
+ let w=0,h=0,dpr=1,n=0,R=0,reach=0,dot=2;
+ let px,py,vx,vy,sinP,cosP,amp,homeY;
+ let angle=0,acc=0,last=0,frame=0,inView=false,touching=false;
+ let mx=1e9,my=1e9;
+
+ function build(){
+  const span=Math.min(w,h);
+  n=Math.max(900,Math.min(9000,Math.round(AT*(span/FOR)*(span/FOR))));
+  px=new Float32Array(n);py=new Float32Array(n);vx=new Float32Array(n);vy=new Float32Array(n);
+  sinP=new Float32Array(n);cosP=new Float32Array(n);amp=new Float32Array(n);homeY=new Float32Array(n);
+  for(let i=0;i<n;i++){
+   sinP[i]=Math.sin(i);cosP[i]=Math.cos(i);
+   amp[i]=Math.sin(i*i)*R;homeY[i]=Math.cos(i*i)*R;
+   px[i]=amp[i]*sinP[i];py[i]=homeY[i]}}
+
+ function physics(){
+  const ca=Math.cos(angle),sa=Math.sin(angle),r2=reach*reach;
+  const mxl=mx-w/2,myl=my-h/2,live=mxl<1e8;
+  for(let i=0;i<n;i++){
+   // sin(i + angle) without calling sin: both halves were computed once.
+   const hx=amp[i]*(sinP[i]*ca+cosP[i]*sa);
+   let ux=vx[i]+(hx-px[i])*SPRING,uy=vy[i]+(homeY[i]-py[i])*SPRING;
+   if(live){const dx=px[i]-mxl,dy=py[i]-myl,d2=dx*dx+dy*dy;
+    if(d2>.1&&d2<r2){const d=Math.sqrt(d2),f=PUSH*(1-d/reach)/d;ux+=dx*f;uy+=dy*f}}
+   ux*=DAMP;uy*=DAMP;
+   vx[i]=ux;vy[i]=uy;px[i]+=ux;py[i]+=uy}
+  angle+=SPIN}
+
+ function draw(){
+  // Transparent, so the card's own ground shows through and the two can never
+  // drift apart the way a hardcoded background colour would.
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=getComputedStyle(root).getPropertyValue('--cloud-ink').trim()||'#3f5162';
+  const cx=w/2,cy=h/2,s=dot;
+  // One fillRect a point, no path per point: several thousand beginPath and
+  // fill pairs a frame is the difference between a budget and a slideshow.
+  for(let i=0;i<n;i++)ctx.fillRect((cx+px[i]-s/2)|0,(cy+py[i]-s/2)|0,s,s)}
+
+ function loop(now){const dt=Math.min(.1,(now-(last||now))/1000);last=now;
+  acc+=dt;let steps=0;
+  while(acc>=STEP&&steps<4){physics();acc-=STEP;steps++}
+  draw();frame=requestAnimationFrame(loop)}
+
+ function sync(){const on=inView&&!document.hidden&&!reduced.matches&&w>0;
+  if(on&&!frame){last=0;acc=0;frame=requestAnimationFrame(loop)}
+  else if(!on){cancelAnimationFrame(frame);frame=0;last=0}}
+
+ function size(){const r=root.getBoundingClientRect();
+  if(!r.width||!r.height)return;
+  dpr=Math.min(devicePixelRatio||1,2);w=r.width;h=r.height;
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  R=Math.min(w,h)*.42;reach=Math.min(w,h)*.22;dot=dpr>1?1.6:2;
+  build();draw()}
+
+ const at=e=>{const r=root.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top};
+ const release=()=>{mx=my=1e9;touching=false};
+ root.addEventListener('pointermove',e=>{if(e.pointerType!=='touch'||touching)at(e)});
+ root.addEventListener('pointerdown',e=>{touching=true;at(e);
+  // Without motion there is no loop to pick the press up, so it is stepped by
+  // hand — a press has to do something.
+  if(reduced.matches){physics();draw()}});
+ // A touch pointer stops existing when the finger lifts, and pointerleave
+ // fires right behind pointerup for it, so the release hangs on the events
+ // that actually mean the gesture ended. pan-y leaves the page scrollable
+ // over the card; the browser cancels the pointer once it takes the scroll.
+ root.addEventListener('pointerup',release);
+ root.addEventListener('pointercancel',release);
+ root.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')release()});
+
+ new ResizeObserver(size).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();draw()});
+ size();sync();
+ return{get count(){return n}}
+}
+const cloudCard=document.querySelector('#cloud-demo');
+if(cloudCard){const cloudHTML=cloudCard.outerHTML;
+ wireCloud(cloudCard);
+ Object.assign(prototypes,{cloud:{title:'Point cloud',html:cloudHTML,
+  css:'*{box-sizing:border-box}'+cssFor(/^\.cloud/)
+   +'.cloud{position:relative;inset:auto;width:min(560px,92vw);height:360px}',
+  js:'/* Point cloud. Technique from a p5 sketch supplied by the site owner,\n'
+   +'   reimplemented in vanilla: every point springs toward a home on a slowly\n'
+   +'   turning sphere, and the pointer shoves aside whatever it passes over.\n'
+   +'   The index-as-angle sphere is the sketch\'s own; the trig is hoisted out\n'
+   +'   of the inner loop, the physics runs on a fixed step rather than per\n'
+   +'   frame, and pointer events replace a mouse-only, user-agent-sniffed\n'
+   +'   interaction. */\n'
+   +wireCloud.toString()+";wireCloud(document.querySelector('.cloud'));"}});
+}
