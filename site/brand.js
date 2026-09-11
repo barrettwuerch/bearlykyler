@@ -1,6 +1,6 @@
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button))});document.querySelectorAll('[data-category]').forEach(card=>card.hidden=button.dataset.filter!=='all'&&card.dataset.category!==button.dataset.filter)}));
 const demo=document.querySelector('#bear-demo');document.querySelector('#play-bear').addEventListener('click',()=>{demo.currentTime=0;demo.play().catch(()=>{})});
-const common='body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #247ab6;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}';
+const common='body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}';
 const prototypes={};
 Object.assign(prototypes,{wave:{title:'Bear wave — original animation',file:'components/bear-wave.html'},'name-tag':{title:'Name tag',file:'components/name-tag.html'},closingdoor:{title:'Closing door',file:'components/closingdoor.html'}});
 const dialog=document.querySelector('#source-dialog');let selectedCode='',selectedName='';
@@ -202,7 +202,7 @@ function wireOrb(root){const reduced=matchMedia('(prefers-reduced-motion: reduce
  // Scale by buffer/size rather than by dpr, so the transform stays exact when
  // the buffer rounds.
  ctx.scale(canvas.width/size,canvas.height/size);
- ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()||'#247ab6';
+ ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()||'#2274ad';
  const GRID=11,half=(GRID-1)/2,gap=size*.74/(GRID-1),rmax=gap*.6,mid=size/2;
  const REST={idle:.86,listening:1,thinking:.93};
  const weights={idle:1,listening:0,thinking:0};
