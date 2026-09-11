@@ -337,9 +337,10 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
  --tilt-perspective:1000px;--tilt-return:1000ms;--tilt-return-ease:cubic-bezier(.22,1,.36,1);
  --tilt-follow:400ms;--tilt-follow-ease:cubic-bezier(.22,1,.36,1);
  --tilt-glare-opacity:.32;--tilt-glare-fade:300ms;--tilt-glare-ease:cubic-bezier(.22,1,.36,1);
- /* The outer wrapper is the flat hit area; touch-action:none lets a finger
-    drag the card instead of scrolling the page. */
- touch-action:none}
+ /* The outer wrapper is the flat hit area. pan-y, not none: the browser keeps
+    the vertical drag for the page, so the card is not a 280px hole in the
+    scroll, and the horizontal axis is still ours to tilt with. */
+ touch-action:pan-y}
 .t-tilt-card{position:relative;border-radius:12px;overflow:hidden;
  transform:perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx,0deg)) rotateY(var(--tilt-ry,0deg));
  transform-style:preserve-3d;transition:transform var(--tilt-return) var(--tilt-return-ease);will-change:transform}
@@ -434,3 +435,93 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
    does not hold it: with html visible, the clip does not always reach the
    viewport, and a phone could be dragged 118px sideways. Clip at the root too. */
 html{overflow-x:clip}
+
+/* ── Mobile ────────────────────────────────────────────────────────────
+   Measured on a 390×844 phone before any of this was written: the hero
+   ran 769px of an 844px screen with a 76px headline and the bear stranded
+   at the bottom; the gallery ran 8,738px of identical cards with no way
+   back up; and every interactive control on the page was under the 44px
+   touch minimum — 44 card actions at 36px, the filters at 38px, the bear
+   controls at 28px. This layer is last on purpose: the rules above are
+   written across six earlier passes and out-specify each other, so the
+   narrow-screen answers have to live in one place that wins. Nothing
+   here applies above 760px. */
+
+/* Touch targets. Same type and same glyph sizes — only the box grows. */
+@media(max-width:760px){
+ .collection .card-info .card-actions .text-link{width:44px;height:44px}
+ .collection .card-actions{gap:6px}
+ .filters button{height:44px;padding:0 18px}
+ .living-controls button,.living-controls select{min-height:44px;padding:11px 17px;font-size:13px}
+ .living-check{min-height:44px}
+ .living-check input{width:20px;height:20px}
+ .header nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+ .wordmark,footer>a:last-child{display:inline-block;padding-block:13px}
+ .bear-introduction .scroll{min-height:44px;align-items:center}
+ /* The featured card's own control, not part of a supplied component. */
+ .play-button{min-height:44px}
+}
+
+/* The hero. The bear is the reason to be here and it was the smallest
+   thing on the screen, so the headline gives up the room. */
+@media(max-width:600px){
+ .bear-hero{padding:6px 0 30px}
+ .bear-hero h1{font-size:46px;line-height:1;margin-bottom:12px}
+ .bear-introduction{padding:18px 0 0;display:block}
+ .bear-introduction>p{font-size:15.5px;line-height:1.5;margin:0 0 14px;color:var(--muted)}
+ .bear-hero #stage{height:clamp(250px,33svh,330px)}
+ /* The work is what the page is for, so its link stops being a 12px line of
+    text and becomes something a thumb can hit. */
+ .bear-introduction .scroll{display:inline-flex;align-items:center;justify-content:center;gap:12px;
+  min-height:48px;padding:0 20px;border-radius:999px;background:var(--ink);color:var(--paper);
+  font:800 14px Nunito,Arial,sans-serif;box-shadow:0 1px 2px rgba(41,52,60,.1),0 5px 14px rgba(41,52,60,.14)}
+ .bear-introduction .scroll span{color:var(--paper);font-size:17px}
+ .bear-hero .hero-top{margin-bottom:0}
+}
+
+/* "Work" was hidden below 700px, so the nav pointed away from the gallery on
+   exactly the screens where the gallery is hardest to reach. All three fit. */
+@media(max-width:760px){
+ .header nav a:first-child{display:inline-flex}
+ .header nav{gap:10px;font-size:13.5px}
+ .header{gap:10px}
+}
+
+/* The bear controls: two primary actions, everything else behind a
+   disclosure. Five pills wrapping onto two rows read as a control panel;
+   the bear should read as a toy. */
+.living-primary{display:contents}
+.living-more{display:contents}
+.living-more-toggle{display:none}
+.living-chev{display:inline-block;margin-left:4px;transition:transform .22s cubic-bezier(.32,.72,0,1)}
+.living-controls.more-open .living-chev{transform:rotate(180deg)}
+@media(max-width:600px){
+ .living-controls{flex-direction:column;gap:10px;margin-top:10px}
+ .living-primary{display:flex;gap:9px}
+ .living-more-toggle{display:inline-flex;align-items:center;justify-content:center}
+ .living-more{display:none;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+ .living-controls.more-open .living-more{display:flex}
+ #living-status{margin-top:8px}
+}
+@media(prefers-reduced-motion:reduce){.living-chev{transition:none}}
+
+/* The gallery. Sticky filters so the only navigation does not scroll away,
+   and a way back to the top of nine screens of cards. display:contents
+   dissolves the heading wrapper so the filters can stick to the section
+   rather than to a box that is 80px tall. */
+@media(max-width:600px){
+ .collection .section-heading{display:contents}
+ .collection .section-heading>div:first-child{margin-bottom:18px}
+ .collection .filters{position:sticky;top:0;z-index:8;gap:8px;
+  margin:0 -6vw 20px;padding:9px 6vw;overflow-x:auto;scrollbar-width:none;
+  background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);
+  box-shadow:0 1px 0 rgba(41,52,60,.07)}
+ .collection .filters::-webkit-scrollbar{display:none}
+ .collection .filters button{flex:none}
+}
+.to-top{position:fixed;right:16px;bottom:16px;z-index:9;width:48px;height:48px;padding:0;border:0;
+ border-radius:999px;background:var(--ink);color:var(--paper);display:none;align-items:center;justify-content:center;
+ box-shadow:0 2px 6px rgba(41,52,60,.18),0 10px 26px rgba(41,52,60,.22)}
+.to-top svg{width:20px;height:20px}
+.to-top:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+@media(max-width:760px){.to-top{display:flex}.to-top[hidden]{display:none}}

@@ -527,23 +527,47 @@ reveal:{title:'Grid reveal',html:gridHTML,css:'*{box-sizing:border-box}'+varsFor
    transitions.dev snippets supplied by the site owner. */
 function wireTilt(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const card=root.querySelector('.t-tilt-card'),LIMIT=11;let frame=0,px=0,py=0;
+ // A tap is the gesture people try first on a phone, and on a pointer-following
+ // card it does nothing: pointerup lands a few frames after pointerdown, so the
+ // card twitches and settles. These hold the tap so it plays a deliberate lean.
+ const TAP_SLOP=10,TAP_TIME=500,TAP_HOLD=380,TAP_LIMIT=LIMIT*1.6;
+ let hold=0,downX=0,downY=0,downAt=0,tapping=false;
  // Read the pointer against the OUTER wrapper, which never transforms — measuring
  // the card while it tilts would feed its own rotation back into the input.
- function apply(){frame=0;const box=root.getBoundingClientRect();
+ function apply(limit){frame=0;const box=root.getBoundingClientRect(),L=limit||LIMIT;
   const x=Math.min(Math.max((px-box.left)/box.width,0),1),y=Math.min(Math.max((py-box.top)/box.height,0),1);
-  root.style.setProperty('--tilt-ry',((x-.5)*2*LIMIT).toFixed(2)+'deg');
-  root.style.setProperty('--tilt-rx',((.5-y)*2*LIMIT).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-ry',((x-.5)*2*L).toFixed(2)+'deg');
+  root.style.setProperty('--tilt-rx',((.5-y)*2*L).toFixed(2)+'deg');
   root.style.setProperty('--tilt-gx',(x*100).toFixed(1)+'%');
   root.style.setProperty('--tilt-gy',(y*100).toFixed(1)+'%')}
  function track(e){if(reduced.matches)return;px=e.clientX;py=e.clientY;
   root.classList.add('is-hover');card.classList.add('is-tilting');
-  if(!frame)frame=requestAnimationFrame(apply)}
- function rest(){cancelAnimationFrame(frame);frame=0;
+  // Wrapped, not passed directly: rAF hands the callback a timestamp, which
+  // would land in apply's limit argument and rotate the card by the clock.
+  if(!frame)frame=requestAnimationFrame(()=>apply())}
+ function rest(){clearTimeout(hold);hold=0;tapping=false;
+  cancelAnimationFrame(frame);frame=0;
   root.classList.remove('is-hover');card.classList.remove('is-tilting');
   root.style.setProperty('--tilt-rx','0deg');root.style.setProperty('--tilt-ry','0deg')}
- root.addEventListener('pointermove',track);
- root.addEventListener('pointerdown',e=>{root.setPointerCapture?.(e.pointerId);track(e)});
- for(const type of ['pointerleave','pointerup','pointercancel'])root.addEventListener(type,rest);
+ // Lean further than a drag would, hold, then let the long return ease it back.
+ function nudge(){if(reduced.matches)return rest();
+  cancelAnimationFrame(frame);frame=0;tapping=true;
+  root.classList.add('is-hover');card.classList.add('is-tilting');
+  apply(TAP_LIMIT);
+  clearTimeout(hold);hold=setTimeout(rest,TAP_HOLD)}
+ root.addEventListener('pointermove',e=>{if(tapping)return;track(e)});
+ root.addEventListener('pointerdown',e=>{rest();
+  downX=e.clientX;downY=e.clientY;downAt=e.timeStamp;
+  root.setPointerCapture?.(e.pointerId);track(e)});
+ root.addEventListener('pointerup',e=>{
+  const still=Math.abs(e.clientX-downX)<=TAP_SLOP&&Math.abs(e.clientY-downY)<=TAP_SLOP;
+  if(e.pointerType==='touch'&&still&&e.timeStamp-downAt<=TAP_TIME)nudge();else rest()});
+ // A touch pointer ceases to exist at the end of a gesture, so the browser
+ // fires pointerleave immediately after pointerup — honouring it here would
+ // cancel the tap lean in the same frame it starts. Leaving is a mouse idea.
+ root.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')rest()});
+ // pointercancel still rests: that is the browser taking the gesture for a scroll.
+ root.addEventListener('pointercancel',rest);
  reduced.addEventListener('change',()=>{if(reduced.matches)rest()});
 }
 function wireMatrix(root){const grid=root.querySelector('.t-matrix');
@@ -593,3 +617,39 @@ matrix:{title:'Matrix dot loader',html:matrixHTML,css:'*{box-sizing:border-box}'
  js:wireMatrix.toString()+";wireMatrix(document.querySelector('.matrix-demo'));"},
 acc:{title:'Accordion expand',html:accHTML,css:'*{box-sizing:border-box}'+varsFor('--amber','--muted','--ink','--line')+cssFor(/^\.t-acc|^\.acc-demo/),
  js:wireAcc.toString()+";wireAcc(document.querySelector('.acc-demo'));"}});
+
+/* ── Mobile affordances ────────────────────────────────────────────────
+   Three small host-side controls. None of them reach into the bear player:
+   "Surprise me" sets the routine select and clicks the play button the
+   player already owns, so the contract in living-bear/player.js is
+   untouched. */
+(function(){
+ const controls=document.querySelector('.living-controls');
+ if(controls){
+  const choice=controls.querySelector('#living-choice'),play=controls.querySelector('#living-play');
+  const surprise=controls.querySelector('#living-surprise');
+  // Never repeat the routine already showing — a "surprise" that changes
+  // nothing reads as a dead button.
+  if(surprise&&choice&&play)surprise.addEventListener('click',()=>{
+   const options=[...choice.options].filter(o=>o.value!==choice.value);
+   if(!options.length)return play.click();
+   choice.value=options[Math.floor(Math.random()*options.length)].value;
+   play.click()});
+  const toggle=controls.querySelector('#living-more-toggle');
+  if(toggle)toggle.addEventListener('click',()=>{
+   const open=toggle.getAttribute('aria-expanded')!=='true';
+   toggle.setAttribute('aria-expanded',String(open));
+   controls.classList.toggle('more-open',open)});
+ }
+ /* Back to top. The gallery runs nine screens deep on a phone, and the only
+    other way up is a long swipe. Shown once the hero is behind you. */
+ const toTop=document.querySelector('#to-top');
+ if(toTop){
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  toTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:reduced.matches?'auto':'smooth'}));
+  let ticking=false;
+  const update=()=>{ticking=false;toTop.hidden=scrollY<innerHeight};
+  addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
+  update();
+ }
+})();
