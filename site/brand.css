@@ -394,3 +394,43 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
  .t-acc-panel,.t-acc-panel-inner,.t-acc-chevron{transition:none!important}
 }
 .t-matrix i.is-still{animation:none}
+
+/* ── Living bear ───────────────────────────────────────────────────────
+   Host contract for living-bear/player.js. The canvas is absolutely placed
+   inside .bear-hero-main and never clipped — the player draws on a padded
+   surface wider than the movement rectangle, so any overflow:hidden here
+   would cut the character off at the walls. */
+.bear-hero-main{position:relative;isolation:isolate;overflow:visible}
+.bear-hero{overflow:visible}
+#living-canvas{position:absolute;z-index:2;display:block;pointer-events:none}
+/* The bear takes pointer input through this button alone, so the artwork
+   underneath stays inert and the page keeps scrolling everywhere else. */
+#grab-bear{position:absolute;z-index:5;padding:0;border:0;background:transparent;border-radius:45%;touch-action:none;cursor:grab;-webkit-tap-highlight-color:transparent}
+#grab-bear:active{cursor:grabbing}
+#grab-bear:focus-visible{outline:2px dashed var(--amber);outline-offset:5px}
+.bear-center{pointer-events:none}
+.bear-introduction{z-index:3}
+#stage{cursor:default;touch-action:auto}
+#fallback[hidden]{display:none}
+
+.living-controls{position:relative;z-index:6;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:14px}
+.living-label{font:600 12.5px Nunito,Arial,sans-serif;color:var(--muted);margin-right:2px}
+.living-controls button,.living-controls select{font:600 12.5px Nunito,Arial,sans-serif;letter-spacing:.15px;color:var(--muted);background:#fff;border:0;border-radius:999px;padding:9px 16px;line-height:1;
+ box-shadow:0 1px 1px rgba(41,52,60,.04),0 3px 8px rgba(41,52,60,.06),inset 0 0 0 1px rgba(41,52,60,.07);transition:color .2s,box-shadow .26s cubic-bezier(.32,.72,0,1),transform .26s cubic-bezier(.32,.72,0,1)}
+.living-controls button{cursor:pointer}
+.living-controls button:hover{color:var(--ink);transform:translateY(-2px);box-shadow:0 2px 4px rgba(41,52,60,.06),0 10px 22px rgba(41,52,60,.11),inset 0 0 0 1px rgba(41,52,60,.1)}
+.living-controls button:active{transform:translateY(0)}
+.living-controls :focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+#pickup-toggle{color:var(--paper);background:var(--ink);box-shadow:0 1px 2px rgba(41,52,60,.1),0 5px 14px rgba(41,52,60,.14)}
+#pickup-toggle:hover{color:var(--paper);background:var(--amber)}
+.living-check{display:inline-flex;align-items:center;gap:7px;font:600 12.5px Nunito,Arial,sans-serif;color:var(--muted);cursor:pointer}
+#living-status{position:relative;z-index:6;margin:12px 0 0;text-align:center;min-height:1.4em;font:13px Nunito,Arial,sans-serif;color:var(--muted)}
+
+@media(prefers-reduced-motion:reduce){.living-controls button{transition:none}}
+@media(max-width:600px){.living-controls{gap:6px}.living-controls button,.living-controls select{padding:8px 13px;font-size:12px}}
+
+/* The bear's drawing surface is padded wider than the viewport on purpose and
+   must never be clipped to the movement rectangle. body{overflow-x:clip} alone
+   does not hold it: with html visible, the clip does not always reach the
+   viewport, and a phone could be dragged 118px sideways. Clip at the root too. */
+html{overflow-x:clip}
