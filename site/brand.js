@@ -1300,3 +1300,63 @@ if(cloudCard){const cloudHTML=cloudCard.outerHTML;
    +'   interaction. */\n'
    +wireCloud.toString()+";wireCloud(document.querySelector('.cloud'));"}});
 }
+
+/* ── Press depth ────────────────────────────────────────────────────────
+   Inferred from a React call site supplied by the site owner — the component
+   itself was not included, only its props, so the API is faithful and the
+   drawing is this site's. It was used there two ways, as a wrapper and as a
+   hook bound onto a button of the caller's own, so the behaviour is kept
+   separate from the element here too: pressDepth() wires anything.
+
+   What the press is worth getting right is what ends it. A pointer that
+   leaves while held, a cancelled gesture, a window that loses focus, a key
+   released — all of them, or a key stays stuck down when you alt-tab away.
+   And a key is one of them: a control that depresses under a finger but not
+   under the space bar behaves differently depending on how you reach it. */
+function pressDepth(el,opt){const depth=(opt&&opt.depth)||2;
+ let down=false,byKey=false;
+ const apply=()=>{el.style.transform=down?'translateY('+depth+'px)':'';
+  el.classList.toggle('is-pressed',down);
+  if(opt&&opt.onChange)opt.onChange(down)};
+ const press=()=>{if(!el.disabled&&!down){down=true;apply()}};
+ const release=()=>{if(down){down=false;byKey=false;apply()}};
+ el.addEventListener('pointerdown',e=>{if(e.button===0||e.pointerType!=='mouse')press()});
+ el.addEventListener('pointerup',release);
+ el.addEventListener('pointercancel',release);
+ el.addEventListener('pointerleave',release);
+ el.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){byKey=true;press()}});
+ el.addEventListener('keyup',e=>{if(byKey&&(e.key===' '||e.key==='Enter'))release()});
+ el.addEventListener('blur',release);
+ addEventListener('blur',release);
+ return{get pressed(){return down},release}}
+
+function wirePad(root){
+ const amount=root.querySelector('.pk-amount'),live=root.querySelector('.pk-live');
+ const charge=root.querySelector('.pk-charge');
+ const keys=[...root.querySelectorAll('.pk-key')];
+ // Held in cents, so there is no decimal key to press — the grid has a gap
+ // where one would be rather than a key that does nothing.
+ let digits='';
+ const money=()=>(Number(digits||'0')/100).toFixed(2);
+ const paint=()=>{amount.textContent=money();charge.disabled=digits.length===0};
+ for(const k of keys){pressDepth(k,{depth:2});
+  k.addEventListener('click',()=>{const d=k.dataset.key;
+   digits=d==='del'?digits.slice(0,-1):(digits+d).slice(0,6);paint()})}
+ pressDepth(charge,{depth:2});
+ charge.addEventListener('click',()=>{live.textContent='Charged $'+money();digits='';paint()});
+ paint();
+ return{get value(){return Number(digits||'0')}}}
+
+const padCard=document.querySelector('#pad-demo');
+if(padCard){const padHTML=padCard.outerHTML;
+ wirePad(padCard);
+ Object.assign(prototypes,{pad:{title:'Press depth',html:padHTML,
+  css:'*{box-sizing:border-box}'+varsFor('--ink','--muted','--paper','--line','--amber')
+   +cssFor(/^\.pk/)+'.pk-scene{position:relative;inset:auto;margin:0 auto}',
+  js:'/* Press depth. Inferred from a React call site supplied by the site\n'
+   +'   owner: the component was not included, only its props. A press ends on\n'
+   +'   any of the events that actually mean the gesture ended — pointer up,\n'
+   +'   cancel, leave, blur, key up — and a key presses it as a finger does. */\n'
+   +pressDepth.toString()+'\n'+wirePad.toString()
+   +";wirePad(document.querySelector('.pk-scene'));"}});
+}
