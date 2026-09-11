@@ -234,26 +234,6 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 
 /* Perspective lives on the parent so the flap tips away from the viewer
    rather than merely squashing. */
-.folder{display:flex;align-items:flex-end;justify-content:center;padding-bottom:16px;perspective:820px}
-.folder-body{position:relative;width:170px;height:118px;padding:0;border:0;background:none;cursor:pointer}
-.folder-body:focus-visible{outline:2px solid var(--amber);outline-offset:6px}
-.folder-back{position:absolute;inset:0;z-index:0;border-radius:14px;background:var(--amber);box-shadow:inset 0 0 8px 2px rgba(255,255,255,.28)}
-/* The tab reads as part of the same panel, so it takes the same paint. */
-.folder-back::before{content:'';position:absolute;left:0;top:-13px;width:80px;height:22px;border-radius:11px 11px 0 0;background:inherit}
-.folder-card{position:absolute;left:50%;bottom:12px;z-index:1;width:74px;height:92px;margin-left:-37px;border-radius:9px;background:#fff;box-shadow:0 7px 16px rgba(41,52,60,.2);transition:transform .58s cubic-bezier(.32,.72,0,1)}
-.folder-card::after{content:'';position:absolute;left:9px;right:9px;top:12px;height:54px;border-radius:2px;background:repeating-linear-gradient(to bottom,var(--line) 0 4px,transparent 4px 11px)}
-.folder-card:nth-child(2){transform:translate(-30px,-5px) rotate(-7deg)}
-.folder-card:nth-child(3){transform:translate(0,-12px) rotate(2deg)}
-.folder-card:nth-child(4){transform:translate(30px,-5px) rotate(8deg)}
-.folder-body:hover .folder-card:nth-child(2){transform:translate(-38px,-24px) rotate(-11deg)}
-.folder-body:hover .folder-card:nth-child(3){transform:translate(0,-32px) rotate(1deg)}
-.folder-body:hover .folder-card:nth-child(4){transform:translate(38px,-24px) rotate(12deg)}
-.folder.open .folder-card:nth-child(2){transform:translate(-56px,-64px) rotate(-17deg)}
-.folder.open .folder-card:nth-child(3){transform:translate(0,-74px) rotate(3deg)}
-.folder.open .folder-card:nth-child(4){transform:translate(56px,-66px) rotate(16deg)}
-.folder-front{position:absolute;left:0;right:0;bottom:0;z-index:2;height:92px;border-radius:12px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transform-origin:bottom center;transform:rotateX(-14deg);transition:transform .6s cubic-bezier(.34,1.06,.64,1)}
-.folder-body:hover .folder-front{transform:rotateX(-44deg)}
-.folder.open .folder-front{transform:rotateX(-58deg)}
 
 /* Gooey nav. The filter runs on a backing layer only — over live text it
    would blur the labels along with the shapes. */
@@ -268,7 +248,7 @@ h1,h2,h3,.specimen-title,.about h2,.collection-note{font-family:Nunito,Arial,san
 .goo-labels button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:11px}
 
 @media(prefers-reduced-motion:reduce){
- .folder-card,.folder-front,.goo-seg,.goo-labels button{transition:none}
+ .goo-seg,.goo-labels button{transition:none}
 }
 
 /* Gravity letters and grid reveal. Adapted from the beui.dev GravityLetters
@@ -678,6 +658,9 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
    without eating the name. The size is in the sheet anyway; the exported
    component runs at 300px, where it fits, and keeps it. */
 .gf-preview .gf-meta{display:none}
+/* The card number and the sheet's header occupy the same corner. */
+.collection .card .preview.gf-preview .preview-label{transition:opacity .3s ease}
+.collection .card .preview.gf-preview.gf-reading .preview-label{opacity:0}
 @media(max-width:600px){.collection .card .preview.gf-preview{min-height:240px}}
 
 /* ── Gatefold folder (003) ─────────────────────────────────────────────
@@ -685,12 +668,19 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
    is deliberate, and a folder is no reason to introduce a hue nothing
    else on the page uses. Seven tokens carry the whole component — two for
    geometry, five for colour — so reskinning it is redefining those. */
-.gf-scene{--gf-w:212px;--gf-h:212px;--gf-lift:0px;
- --gf-cover:#29343c;--gf-cover-in:#1f2830;--gf-pocket:#1b232a;
+.gf-scene{--gf-w:212px;--gf-h:212px;
+ --gf-cover:#242f37;--gf-cover-in:#3d4b57;--gf-pocket:#45525e;
  --gf-doc:#fbfaf6;--gf-doc-ink:#26302c;
- position:relative;perspective:1500px;perspective-origin:50% 56%;
+ /* Board tooth. Ruled gradients were the first try and they read as pinstripe:
+    a fibre is irregular, and anything on a repeat is a pattern. Turbulence has
+    no period to find, so it reads as stock. It lifts the base a few levels as
+    it composites, which the cover token is already darkened to absorb. */
+ --gf-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)' opacity='.07'/%3E%3C/svg%3E");
+ --gf-tooth:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23t)' opacity='.045'/%3E%3C/svg%3E");
+ --gf-rake:linear-gradient(152deg,rgba(255,255,255,.09),rgba(255,255,255,0) 46%,rgba(0,0,0,.08));
+ position:relative;perspective:1500px;perspective-origin:50% 48%;
  width:calc(var(--gf-w) * 2);max-width:100%;display:grid;place-items:center;
- min-height:calc(var(--gf-h) + var(--gf-lift));
+ min-height:var(--gf-h);
  transition:min-height 520ms cubic-bezier(.22,1,.36,1)}
 .gf-scene.is-reading{min-height:var(--gf-box,300px)}
 .gf{position:relative;width:var(--gf-w);height:var(--gf-h);transform-style:preserve-3d;
@@ -701,7 +691,8 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  background:rgba(255,255,255,.07)}
 .gf-slot{position:absolute;left:5.5%;right:5.5%;bottom:17%;transform:translateZ(1px);transform-style:preserve-3d}
 .gf-doc{display:block;width:100%;padding:0;border:0;text-align:left;cursor:pointer;font:inherit;
- border-radius:6px;background:var(--gf-doc);color:var(--gf-doc-ink);
+ border-radius:6px;color:var(--gf-doc-ink);background-color:var(--gf-doc);
+ background-image:var(--gf-tooth);
  box-shadow:0 1px 0 rgba(38,48,44,.16),0 7px 15px rgba(27,35,42,.24);
  transform:translateY(var(--doc-y,32px)) translateZ(var(--doc-z,0px)) scale(var(--doc-s,1));
  transform-origin:50% 100%;
@@ -720,10 +711,25 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 .gf-meta{flex:none;font:7.5px ui-monospace,Menlo,monospace;letter-spacing:.06em;color:#646d76}
 .gf-chev{flex:none;display:grid;place-items:center;width:12px;height:12px;color:#646d76}
 .gf-chev svg{width:9px;height:9px}
+/* The pocket is the back panel folded up, so it is the same stock a shade
+   nearer the light, with the shadow it throws back onto the panel behind it.
+   Reading it as a separate piece is the whole reason the open folder looks
+   like a folder and not like a dark rectangle. */
 .gf-pocket{position:absolute;left:0;right:0;bottom:0;height:44%;border-radius:0 0 10px 10px;
- background:linear-gradient(180deg,var(--gf-pocket),#161d23);transform:translateZ(2px);
- box-shadow:0 -1px 0 rgba(255,255,255,.07),0 -8px 14px rgba(27,35,42,.28)}
-.gf-pocket::after{content:"";position:absolute;left:7%;right:7%;top:0;height:1px;background:rgba(255,255,255,.09)}
+ background-color:var(--gf-pocket);
+ background-image:var(--gf-grain),linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.2));
+ transform:translateZ(2px);
+ box-shadow:0 -10px 16px rgba(18,24,29,.34),inset 0 -1px 0 rgba(0,0,0,.2)}
+.gf-pocket::before{content:"";position:absolute;left:5%;right:5%;top:0;height:1px;
+ background:linear-gradient(90deg,rgba(255,255,255,.16) 0 24%,transparent 24% 76%,rgba(255,255,255,.16) 76%)}
+/* The thumb cut: a half-ellipse in the panel's own colour hanging off the lip,
+   the notch you reach into on a real folder. It sits wholly inside the pocket
+   on purpose — a full ellipse straddling the lip paints over the shadow the
+   pocket casts on the panel behind it, and the cut reads as a pale blob
+   floating above the folder rather than as a hole in it. */
+.gf-pocket::after{content:"";position:absolute;left:50%;top:0;width:48%;height:calc(var(--gf-h) / 13);
+ transform:translateX(-50%);border-radius:0 0 50% 50% / 0 0 100% 100%;
+ background:var(--gf-cover-in);box-shadow:0 1px 0 rgba(255,255,255,.15)}
 /* The cover sits in front of the pocket, as on a real folder. Without the
    translateZ the flaps live at Z 0 and the pocket at 2px, so the pocket covers
    the closed cover's own label — and the label punches through the pocket's
@@ -733,8 +739,17 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 .gf-flap.l{left:0;transform-origin:left center}
 .gf-flap.r{right:0;transform-origin:right center}
 .gf-face{position:absolute;inset:0;backface-visibility:hidden;overflow:hidden}
-.gf-face.out{background:var(--gf-cover)}
-.gf-face.in{background:var(--gf-cover-in);transform:rotateY(180deg)}
+.gf-face.out{background-color:var(--gf-cover);background-image:var(--gf-grain),var(--gf-rake)}
+.gf-face.in{background-color:var(--gf-cover-in);background-image:var(--gf-grain);transform:rotateY(180deg);
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),inset 0 14px 22px rgba(18,24,29,.18)}
+/* The cover's own edge, so the board has a thickness rather than a border, and
+   a shaded/lit pair down the middle so the two halves read as two boards
+   meeting rather than one slab with a line drawn on it. */
+.gf-face.out{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.24)}
+.gf-flap.l .gf-face.out{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.24),
+ inset -1px 0 0 rgba(0,0,0,.32)}
+.gf-flap.r .gf-face.out{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.24),
+ inset 1px 0 0 rgba(255,255,255,.06)}
 .gf-flap.l .gf-face{border-radius:10px 0 0 10px}
 .gf-flap.r .gf-face{border-radius:0 10px 10px 0}
 .gf.is-open .gf-flap.l{transform:translateZ(3px) rotateY(-118deg)}
@@ -749,18 +764,28 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  background:none;padding:0;cursor:pointer;border-radius:10px;-webkit-tap-highlight-color:transparent}
 .gf-open-btn:focus-visible{outline:2px solid var(--amber);outline-offset:5px}
 .gf.is-open .gf-open-btn{display:none}
-/* Closing is a labelled control, not a guess about where to click. Sized in em
-   off the folder's own width so it stays in proportion: fixed pixels made it
-   more than half the width of a card-sized folder, floating in the middle of
-   the pocket and competing with the document for attention. */
-.gf-close{position:absolute;left:50%;bottom:.5em;z-index:6;transform:translateX(-50%) translateZ(7px);
- display:none;align-items:center;gap:.45em;min-height:2.3em;padding:0 .85em;border:0;border-radius:999px;
+/* Closing is a labelled control, not a guess about where to click — and it
+   belongs outside the folder. Sitting in the pocket it covered the one thing
+   the folder had just revealed, and no delay fixes a control that is in the
+   wrong place. It hangs below the board instead, in the margin the card
+   already leaves around a demo — growing the card to make room instead broke
+   the one height every preview in the gallery shares. Sized in em off the
+   folder's own width so it stays in proportion. */
+.gf-close{position:absolute;left:50%;top:100%;margin-top:.42em;z-index:6;
+ transform:translateX(-50%) translateZ(7px) translateY(5px);
+ display:inline-flex;visibility:hidden;opacity:0;pointer-events:none;
+ align-items:center;gap:.45em;min-height:2.2em;padding:0 .95em;border:0;border-radius:999px;
  font-size:calc(var(--gf-w) / 18);font-family:Nunito,Arial,sans-serif;font-weight:700;letter-spacing:.03em;
- background:rgba(255,255,255,.1);color:#cfd8e0;cursor:pointer;white-space:nowrap;
- box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);transition:background .2s,color .2s}
-.gf.is-open .gf-close{display:inline-flex}
-.gf-close:hover{background:rgba(255,255,255,.2);color:#fff}
-.gf-close:focus-visible{outline:2px solid #cfd8e0;outline-offset:3px}
+ background:var(--gf-cover);color:var(--paper);cursor:pointer;white-space:nowrap;
+ box-shadow:0 4px 10px rgba(27,35,42,.2);
+ transition:background .2s,color .2s,opacity .3s ease,transform .3s cubic-bezier(.22,1,.36,1),visibility 0s .3s}
+/* Held back until the cover is most of the way open, so the folder finishes
+   its move before a second thing starts one. */
+.gf.is-open .gf-close{visibility:visible;opacity:1;pointer-events:auto;
+ transform:translateX(-50%) translateZ(7px) translateY(0);
+ transition-delay:440ms,440ms,440ms,440ms,0s}
+.gf-close:hover{background:var(--gf-cover-in)}
+.gf-close:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 .gf-close svg{width:.85em;height:.85em;flex:none}
 /* The chip stays small so it does not compete with the document, but a control
    has to be hittable: the target is grown past the ink rather than the chip. */
@@ -775,7 +800,10 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 .gf-reader[hidden]{display:none}
 .gf-scene.is-reading .gf-reader{pointer-events:auto;opacity:1}
 .gf-scene.is-reading .gf{opacity:.16;transform:scale(.94);pointer-events:none}
-.gf-sheet-doc{width:min(100%,340px);background:var(--gf-doc);color:var(--gf-doc-ink);border-radius:12px;
+.gf-scene.is-reading .gf-close{visibility:hidden;opacity:0;transition-delay:0s}
+.gf-sheet-doc{width:min(100%,340px);color:var(--gf-doc-ink);border-radius:12px;
+ background-color:var(--gf-doc);
+ background-image:var(--gf-tooth);
  padding:20px 22px 18px;text-align:left;transform:translateY(16px) scale(.97);transform-origin:50% 84%;
  box-shadow:0 2px 0 rgba(38,48,44,.1),0 20px 40px rgba(27,35,42,.2),inset 0 0 0 1px rgba(38,48,44,.1);
  transition:transform 520ms cubic-bezier(.22,1,.36,1)}

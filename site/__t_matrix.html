@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Matrix dot loader</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}*{box-sizing:border-box}:root{--amber:#2274ad;--muted:#59677b;--ink:#29343c;--line:#dce5ec}.t-matrix { --matrix-cycle: 1200ms; --matrix-dot: 9px; --matrix-base: #c3d2de; --matrix-active: var(--amber); --matrix-ease: ease-in-out; display: grid; grid-template-columns: repeat(4,var(--matrix-dot)); grid-auto-rows: var(--matrix-dot); gap: var(--matrix-dot); }.t-matrix i { display: block; background: var(--matrix-base); animation-duration: ; animation-timing-function: ; animation-iteration-count: ; animation-direction: ; animation-fill-mode: ; animation-play-state: ; animation-name: ; animation-timeline: ; animation-range-start: ; animation-range-end: ; animation-delay: calc(var(--d,0) * 1ms); }.t-matrix i.is-gap { visibility: hidden; animation: auto ease 0s 1 normal none running none; }@keyframes t-matrix-pulse { 
+  0%, 45%, 100% { background-color: var(--matrix-base); }
+  15% { background-color: var(--matrix-active); }
+}.matrix-demo { display: flex; flex-direction: column; align-items: center; gap: 18px; }.matrix-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 232px; }.matrix-controls button { border: 1px solid var(--line); border-radius: 999px; background: rgb(255, 255, 255); padding: 5px 11px; font: 600 11px Nunito, Arial, sans-serif; color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; }.matrix-controls button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }@media (prefers-reduced-motion: reduce){.t-matrix i { animation: auto ease 0s 1 normal none running none !important; }}.t-matrix i.is-still { animation: auto ease 0s 1 normal none running none; }</style></head><body><div class="matrix-demo" id="matrix-demo"><div class="t-matrix" data-variant="scan" role="img" aria-label="Loading"></div><div class="matrix-controls"><button type="button" data-matrix="scan" aria-pressed="true">Scan</button><button type="button" data-matrix="twinkle" aria-pressed="false">Twinkle</button><button type="button" data-matrix="orbit" aria-pressed="false">Orbit</button><button type="button" data-matrix="pulse" aria-pressed="false">Pulse</button><button type="button" data-matrix-round="" aria-pressed="false">Rounded</button></div></div><script>function wireMatrix(root){const grid=root.querySelector('.t-matrix');
+ const dots=Array.from({length:16},()=>{const i=document.createElement('i');grid.append(i);return i});
+ // A variant is just a table of delays into the one shared colour cycle.
+ const CYCLE=1200,RING=[1,2,7,11,14,13,8,4],CENTRE=[5,6,9,10],CORNERS=[0,3,12,15];
+ const TWINKLE=[7,2,11,5,14,9,0,12,3,15,6,10,13,1,8,4];
+ const tables={
+  scan:i=>[i%4*CYCLE/10,false],
+  twinkle:i=>[TWINKLE.indexOf(i)*CYCLE/16,false],
+  orbit:i=>RING.includes(i)?[RING.indexOf(i)*CYCLE/8,false]:[0,true],
+  pulse:i=>[CENTRE.includes(i)?0:CYCLE*.16,false]};
+ let variant='scan',rounded=false;
+ function paint(){const table=tables[variant];
+  dots.forEach((dot,i)=>{const [delay,still]=table(i);
+   dot.style.setProperty('--d',Math.round(delay));
+   dot.classList.toggle('is-still',still);
+   dot.classList.toggle('is-gap',rounded&&CORNERS.includes(i))});
+  grid.dataset.variant=variant}
+ for(const button of root.querySelectorAll('[data-matrix]'))button.addEventListener('click',()=>{
+  variant=button.dataset.matrix;
+  root.querySelectorAll('[data-matrix]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+  paint()});
+ const round=root.querySelector('[data-matrix-round]');
+ round.addEventListener('click',()=>{rounded=!rounded;round.setAttribute('aria-pressed',String(rounded));paint()});
+ paint();
+};wireMatrix(document.querySelector('.matrix-demo'));</script></body></html>
