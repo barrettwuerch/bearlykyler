@@ -674,6 +674,10 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 @media(max-width:760px){.play-button::before{inset:-12px -22px}}
 
 .collection .card .preview.gf-preview{height:auto;min-height:280px}
+/* At card size the row cannot carry a badge, a name, a size and a chevron
+   without eating the name. The size is in the sheet anyway; the exported
+   component runs at 300px, where it fits, and keeps it. */
+.gf-preview .gf-meta{display:none}
 @media(max-width:600px){.collection .card .preview.gf-preview{min-height:240px}}
 
 /* ── Gatefold folder (003) ─────────────────────────────────────────────
@@ -681,7 +685,7 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
    is deliberate, and a folder is no reason to introduce a hue nothing
    else on the page uses. Seven tokens carry the whole component — two for
    geometry, five for colour — so reskinning it is redefining those. */
-.gf-scene{--gf-w:190px;--gf-h:190px;--gf-lift:0px;
+.gf-scene{--gf-w:212px;--gf-h:212px;--gf-lift:0px;
  --gf-cover:#29343c;--gf-cover-in:#1f2830;--gf-pocket:#1b232a;
  --gf-doc:#fbfaf6;--gf-doc-ink:#26302c;
  position:relative;perspective:1500px;perspective-origin:50% 56%;
@@ -695,7 +699,7 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  transform-style:preserve-3d;box-shadow:0 14px 26px rgba(27,35,42,.24)}
 .gf-spine{position:absolute;left:50%;top:8%;bottom:46%;width:1px;transform:translateX(-50%);
  background:rgba(255,255,255,.07)}
-.gf-slot{position:absolute;left:7%;right:7%;bottom:17%;transform:translateZ(1px);transform-style:preserve-3d}
+.gf-slot{position:absolute;left:5.5%;right:5.5%;bottom:17%;transform:translateZ(1px);transform-style:preserve-3d}
 .gf-doc{display:block;width:100%;padding:0;border:0;text-align:left;cursor:pointer;font:inherit;
  border-radius:6px;background:var(--gf-doc);color:var(--gf-doc-ink);
  box-shadow:0 1px 0 rgba(38,48,44,.16),0 7px 15px rgba(27,35,42,.24);
@@ -704,9 +708,9 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  transition:transform 640ms cubic-bezier(.22,1,.36,1),opacity 300ms ease,box-shadow 300ms ease}
 /* The rise has to clear the pocket lip with room to spare. At two pixels the
    document is technically in front of it and practically unclickable. */
-.gf.is-open .gf-doc{--doc-y:-68px}
-.gf.is-open .gf-doc:hover{--doc-y:-74px}
-.gf.is-wide .gf-doc{--doc-y:-86px;--doc-z:30px;--doc-s:1.04;opacity:0}
+.gf.is-open .gf-doc{--doc-y:-76px}
+.gf.is-open .gf-doc:hover{--doc-y:-82px}
+.gf.is-wide .gf-doc{--doc-y:-96px;--doc-z:30px;--doc-s:1.04;opacity:0}
 .gf-doc:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
 .gf-row{display:flex;align-items:center;gap:7px;padding:8px 10px}
 .gf-kind{flex:none;padding:2px 5px;border-radius:3px;background:var(--gf-cover);color:var(--honey);
@@ -745,16 +749,22 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  background:none;padding:0;cursor:pointer;border-radius:10px;-webkit-tap-highlight-color:transparent}
 .gf-open-btn:focus-visible{outline:2px solid var(--amber);outline-offset:5px}
 .gf.is-open .gf-open-btn{display:none}
-/* Closing is a labelled control, not a guess about where to click. */
-.gf-close{position:absolute;left:50%;bottom:6%;z-index:6;transform:translateX(-50%) translateZ(7px);
- display:none;align-items:center;gap:6px;min-height:34px;padding:0 13px;border:0;border-radius:999px;
- background:rgba(255,255,255,.14);color:#e3e9ee;cursor:pointer;white-space:nowrap;
- font:700 10.5px Nunito,Arial,sans-serif;letter-spacing:.03em;
- box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);transition:background .2s}
+/* Closing is a labelled control, not a guess about where to click. Sized in em
+   off the folder's own width so it stays in proportion: fixed pixels made it
+   more than half the width of a card-sized folder, floating in the middle of
+   the pocket and competing with the document for attention. */
+.gf-close{position:absolute;left:50%;bottom:.5em;z-index:6;transform:translateX(-50%) translateZ(7px);
+ display:none;align-items:center;gap:.45em;min-height:2.3em;padding:0 .85em;border:0;border-radius:999px;
+ font-size:calc(var(--gf-w) / 18);font-family:Nunito,Arial,sans-serif;font-weight:700;letter-spacing:.03em;
+ background:rgba(255,255,255,.1);color:#cfd8e0;cursor:pointer;white-space:nowrap;
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);transition:background .2s,color .2s}
 .gf.is-open .gf-close{display:inline-flex}
-.gf-close:hover{background:rgba(255,255,255,.24)}
-.gf-close:focus-visible{outline:2px solid #e3e9ee;outline-offset:3px}
-.gf-close svg{width:9px;height:9px}
+.gf-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.gf-close:focus-visible{outline:2px solid #cfd8e0;outline-offset:3px}
+.gf-close svg{width:.85em;height:.85em;flex:none}
+/* The chip stays small so it does not compete with the document, but a control
+   has to be hittable: the target is grown past the ink rather than the chip. */
+.gf-close::before{content:"";position:absolute;inset:-13px -10px;border-radius:999px}
 .gf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 /* The sheet, at reading width. A document has to become a document. */
 /* display:grid on a class beats [hidden]{display:none} from the UA sheet, so
@@ -791,8 +801,9 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 .gf-original:hover{box-shadow:inset 0 0 0 1px rgba(38,48,44,.5)}
 .gf-return:focus-visible,.gf-original:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 .gf-return svg,.gf-original svg{width:10px;height:10px}
-@media(max-width:600px){.gf-scene{--gf-w:150px;--gf-h:150px}
- .gf.is-open .gf-doc{--doc-y:-56px}.gf.is-open .gf-doc:hover{--doc-y:-61px}.gf.is-wide .gf-doc{--doc-y:-70px}
+@media(max-width:600px){.gf-scene{--gf-w:176px;--gf-h:176px}
+ .gf-name{font-size:10px}.gf-kind{font-size:7px;padding:2px 4px}
+ .gf.is-open .gf-doc{--doc-y:-63px}.gf.is-open .gf-doc:hover{--doc-y:-68px}.gf.is-wide .gf-doc{--doc-y:-80px}
  .gf-sheet-doc{width:min(100%,290px);padding:16px 17px 15px}}
 @media(prefers-reduced-motion:reduce){
  .gf,.gf-scene,.gf-flap,.gf-doc,.gf-reader,.gf-sheet-doc{transition:none!important}}
