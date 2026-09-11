@@ -715,6 +715,20 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
 /* An open gatefold owns the band — its close chip lands exactly here. */
 .swap:has(.gf.is-open) .swap-switch{opacity:0;visibility:hidden;pointer-events:none;transition-delay:0s,.22s}
 
+/* ── Rain (022) ─────────────────────────────────────────────────────────
+   A dark panel inset in the card rather than a canvas filling it: the card's
+   own number sits on the light ground above, where it stays legible, and the
+   weather reads as something looked at through a window. */
+.rain{position:absolute;left:12px;right:12px;top:42px;bottom:12px;
+ display:block;padding:0;border:0;border-radius:10px;overflow:hidden;cursor:pointer;
+ background:#161d23;-webkit-tap-highlight-color:transparent;
+ box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),0 8px 20px rgba(27,35,42,.16)}
+.rain::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+ background:linear-gradient(180deg,rgba(22,29,35,.55),rgba(22,29,35,0) 34%)}
+.rain-canvas{display:block;width:100%;height:100%}
+.rain:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+@media(max-width:600px){.rain{left:10px;right:10px;top:38px;bottom:10px}}
+
 /* ── Gatefold folder (003) ─────────────────────────────────────────────
    Cover in the site's ink rather than the reference's green: the palette
    is deliberate, and a folder is no reason to introduce a hue nothing
