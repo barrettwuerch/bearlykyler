@@ -3,6 +3,56 @@ const demo=document.querySelector('#bear-demo');document.querySelector('#play-be
 const common='body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fcfdfd;font-family:Arial,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:2px solid #2274ad;outline-offset:5px}@media(prefers-reduced-motion:reduce){*{transition:none!important}}';
 const prototypes={};
 Object.assign(prototypes,{wave:{title:'Bear wave — original animation',file:'components/bear-wave.html'},'name-tag':{title:'Name tag',file:'components/name-tag.html'},closingdoor:{title:'Closing door',file:'components/closingdoor.html'}});
+/* The source sheet's highlighter. These exports take one shape — a single
+   HTML document with a style block and a script block — so three modes is
+   the whole job, and no library is needed. Tokens are emitted as {cls,text}
+   and joined back together unchanged, which is the invariant worth keeping:
+   colouring must never lose or double a character of code somebody is about
+   to paste. */
+const SC_RULES={
+ js:[['com',/\/\*[\s\S]*?\*\/|\/\/[^\n]*/y],
+  ['str',/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`/y],
+  ['kw',/\b(?:const|let|var|function|return|if|else|for|while|do|new|class|extends|of|in|typeof|instanceof|await|async|try|catch|finally|throw|break|continue|switch|case|default|this|null|true|false|undefined|void|delete|yield|import|export|from)\b/y],
+  ['num',/\b(?:0[xX][\da-fA-F]+|\d*\.?\d+(?:[eE][-+]?\d+)?)\b/y],
+  ['fn',/[A-Za-z_$][\w$]*(?=\s*\()/y],
+  ['pun',/[{}()[\];,.:?=+\-*/%<>!&|^~]+/y]],
+ css:[['com',/\/\*[\s\S]*?\*\//y],
+  ['str',/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/y],
+  ['at',/@[\w-]+/y],['var',/--[\w-]+/y],
+  ['num',/#[\da-fA-F]{3,8}\b|\b\d*\.?\d+(?:px|em|rem|%|vw|vh|vmin|vmax|s|ms|deg|fr|ch)?\b/y],
+  ['prop',/[-\w]+(?=\s*:)/y],['sel',/[.#][\w-]+|::?[\w-]+/y],['pun',/[{}();:,>+~*]+/y]],
+ html:[['com',/<!--[\s\S]*?-->/y],['tag',/<\/?[A-Za-z][\w-]*|\/?>/y],
+  ['str',/'(?:[^'\n])*'|"(?:[^"\n])*"/y],['attr',/[A-Za-z_:][-\w:.]*(?=\s*=)/y],['pun',/=/y]]};
+function scScan(src,mode,out){const rules=SC_RULES[mode];let i=0,plain='';
+ while(i<src.length){let hit=null;
+  for(const [cls,re] of rules){re.lastIndex=i;const m=re.exec(src);
+   if(m&&m.index===i&&m[0].length){hit=[cls,m[0]];break}}
+  if(hit){if(plain){out.push({cls:'',text:plain});plain=''}
+   out.push({cls:hit[0],text:hit[1]});i+=hit[1].length}
+  else{plain+=src[i];i+=1}}
+ if(plain)out.push({cls:'',text:plain});return out}
+function scTokenise(src){const out=[];const re=/<(style|script)\b[^>]*>([\s\S]*?)<\/\1>/gi;
+ let last=0,m;
+ while((m=re.exec(src))){scScan(src.slice(last,m.index),'html',out);
+  const openEnd=m.index+m[0].indexOf('>')+1;
+  scScan(src.slice(m.index,openEnd),'html',out);
+  scScan(m[2],m[1].toLowerCase()==='style'?'css':'js',out);
+  last=m.index+m[0].length;
+  scScan(src.slice(openEnd+m[2].length,last),'html',out)}
+ scScan(src.slice(last),'html',out);return out}
+/* Tokens to lines, splitting any token that spans newlines so the gutter and
+   the code can never drift apart. */
+function scLines(tokens){const lines=[[]];
+ for(const t of tokens){const parts=t.text.split('\n');
+  parts.forEach((part,k)=>{if(k)lines.push([]);
+   if(part)lines[lines.length-1].push({cls:t.cls,text:part})})}
+ return lines}
+const scEsc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function scPaint(code,src){
+ code.innerHTML=scLines(scTokenise(src)).map(toks=>
+  '<span class="sc-row"><span class="sc-n"></span><span class="sc-src">'
+  +(toks.map(t=>t.cls?'<span class="sc-'+t.cls+'">'+scEsc(t.text)+'</span>':scEsc(t.text)).join('')||' ')
+  +'</span></span>').join('')}
 const dialog=document.querySelector('#source-dialog');let selectedCode='',selectedName='';
 /* The card actions are icon-only now, so feedback goes to the accessible name
    and a class that swaps the glyph — writing textContent would delete the icon. */
@@ -11,9 +61,11 @@ function flag(button,text,done){const was=button.dataset.label||(button.dataset.
  button.setAttribute('aria-label',text);button.setAttribute('title',text);
  button.flagTimer=setTimeout(()=>{button.classList.remove('copied');
   button.setAttribute('aria-label',was);button.setAttribute('title',was)},1600)}
-document.querySelectorAll('[data-source]').forEach(button=>button.addEventListener('click',async()=>{const item=prototypes[button.dataset.source];selectedName=button.dataset.source;selectedCode='<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+item.title+'</title><style>'+common+item.css+'</style></head><body>'+item.html+'<script>'+item.js+'</scr'+'ipt></body></html>';if(item.file){try{const response=await fetch(item.file);if(!response.ok)throw Error();selectedCode=await response.text()}catch{flag(button,'Could not load — retry');return}}if(button.hasAttribute('data-copy-direct')){try{await navigator.clipboard.writeText(selectedCode);flag(button,'Copied',true);return}catch{/* Show selectable source when clipboard access is unavailable. */}}document.querySelector('#source-title').textContent=item.title;document.querySelector('#source-code').textContent=selectedCode;document.querySelector('#copy-code').textContent='Copy code';dialog.showModal()}));
+document.querySelectorAll('[data-source]').forEach(button=>button.addEventListener('click',async()=>{const item=prototypes[button.dataset.source];selectedName=button.dataset.source;selectedCode='<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+item.title+'</title><style>'+common+item.css+'</style></head><body>'+item.html+'<script>'+item.js+'</scr'+'ipt></body></html>';if(item.file){try{const response=await fetch(item.file);if(!response.ok)throw Error();selectedCode=await response.text()}catch{flag(button,'Could not load — retry');return}}if(button.hasAttribute('data-copy-direct')){try{await navigator.clipboard.writeText(selectedCode);flag(button,'Copied',true);return}catch{/* Show selectable source when clipboard access is unavailable. */}}document.querySelector('#source-title').textContent=item.title;const card=button.closest('article.card');const stamp=card&&card.querySelector('.preview-label');document.querySelector('#source-eyebrow').textContent=stamp?stamp.textContent.trim():'SOURCE';document.querySelector('#source-file').textContent=selectedName+'.html';document.querySelector('#source-size').textContent=(new TextEncoder().encode(selectedCode).length/1024).toFixed(1)+' KB';scPaint(document.querySelector('#source-code'),selectedCode);document.querySelector('#source-lines').textContent=document.querySelectorAll('#source-code .sc-row').length+' lines';document.querySelector('#source-slab').scrollTop=0;document.querySelector('#copy-code-label').textContent='Copy code';dialog.showModal()}));
 document.querySelector('#close-source').addEventListener('click',()=>dialog.close());
-document.querySelector('#copy-code').addEventListener('click',async e=>{try{await navigator.clipboard.writeText(selectedCode);e.target.textContent='Copied'}catch{e.target.textContent='Use Download HTML'}});
+document.querySelector('#copy-code').addEventListener('click',async()=>{const label=document.querySelector('#copy-code-label');try{await navigator.clipboard.writeText(selectedCode);label.textContent='Copied'}catch{label.textContent='Use Download'}clearTimeout(label.scTimer);label.scTimer=setTimeout(()=>{label.textContent='Copy code'},1600)});/* Wrap is on by default: these exports carry lines over a thousand characters
+   long, and unwrapped a phone shows about four words of each. */
+document.querySelector('#wrap-code').addEventListener('click',e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',String(on));document.querySelector('#source-slab').classList.toggle('sc-wrap',on)});
 document.querySelector('#download-code').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([selectedCode],{type:'text/html'}));const a=document.createElement('a');a.href=url;a.download=selectedName+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 
 /* Expandable action bar and status island. Behaviour adapted from the
