@@ -1022,3 +1022,10 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  .gf-sheet-doc{width:min(100%,290px);padding:16px 17px 15px}}
 @media(prefers-reduced-motion:reduce){
  .gf,.gf-scene,.gf-flap,.gf-doc,.gf-reader,.gf-sheet-doc{transition:none!important}}
+/* The gallery's own card-override shape: the collection sets the preview
+   ground at three classes deep, so a night panel has to match it. */
+.collection .card .preview.osc-preview{background:#000}
+.collection .card .preview.osc-preview .preview-label{color:#8e99a6}
+/* Clear of the preview label, the way the other canvas scenes sit. */
+.osc-scene{position:absolute;inset:26px 0 0;width:auto;height:auto;border:0;padding:0;margin:0;background:#000;cursor:crosshair;display:block;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.osc-canvas{display:block;width:100%;height:100%}
