@@ -1538,3 +1538,120 @@ if(ripCard){const ripHTML=ripCard.outerHTML;
    +'   than only the patch under the pointer. */\n'
    +wireRipple.toString()+";wireRipple(document.querySelector('.rip-scene'));"}});
 }
+/* Oscillation. A stack of waveforms drawn once per colour channel, the copies
+   pulled apart so they fringe where they disagree and go white where they
+   agree. Additive compositing does the colour: it is the density, not a
+   palette. The stack breathes between two silhouettes, a cone and a leaf.
+   Silhouette and wavelength gradient after an RGB waveform stack the site
+   owner shared; the implementation and the touch response are original. */
+function wireOsc(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.osc-canvas'),ctx=canvas.getContext('2d',{alpha:false});
+ const ROWS=80;
+ // Two silhouettes the stack breathes between. Cone is a pointed crown
+ // opening downward; leaf swells at the middle and closes toward both ends.
+ const CONE=t=>.10+.62*Math.pow(t,.55)*(1-.45*Math.pow(t,4));
+ const LEAF=t=>Math.max(.15+.60*Math.pow(Math.sin(Math.PI*Math.pow(t,1.15)),.75),.15+.24*t);
+ // morph is held for the whole frame so all three channels agree on the shape.
+ let morph=0;
+ const widthAt=t=>{const c=CONE(t);return c+(LEAF(t)-c)*morph};
+ // Wavelength is what changes down the stack — a tight buzz at the crown
+ // opening into slow swells at the foot.
+ const freqAt=t=>3.2+19*Math.pow(1-t,2);
+ const ampAt=t=>1.3+1.75*t;
+ let w=0,h=0,dpr=1,clock=0,last=null,raf=0;
+ let held=false,heat=0,heatY=.5,tear=0,tearY=.5,inView=true;
+
+ const size=()=>{dpr=Math.min(devicePixelRatio||1,2);
+  const cw=root.clientWidth,ch=root.clientHeight;if(!cw||!ch)return false;
+  const nw=Math.round(cw*dpr),nh=Math.round(ch*dpr);
+  if(canvas.width!==nw||canvas.height!==nh){canvas.width=nw;canvas.height=nh}
+  w=cw;h=ch;return true};
+
+ // One channel's worth of the whole stack as a single path, so each colour
+ // costs one stroke rather than one per row.
+ const channel=(colour,dx,shift)=>{ctx.strokeStyle=colour;ctx.beginPath();
+  const gap=h/(ROWS+11),top=gap*3.2;
+  // The figure is drawn portrait whatever the frame is. A gallery preview is
+  // wide and short, and letting the stack run its full width flattens the
+  // silhouette into a fan, so the horizontal span is capped against the height
+  // and centred. In a portrait frame the cap never binds.
+  const bw=Math.min(w,h*1.7);
+  for(let i=0;i<ROWS;i++){const t=i/(ROWS-1),rowY=top+i*gap;
+   const dy=rowY/h-heatY,grip=heat*Math.exp(-(dy*dy)/.012);
+   const span=widthAt(t)*(1+grip*.42)*bw*.5;
+   const freq=freqAt(t),amp=ampAt(t)*gap*(1+grip*1.9);
+   const steps=Math.min(230,Math.max(44,Math.round(span*.62)));
+   // The torn slice: one band slides sideways, like a dropped frame.
+   const slide=Math.exp(-Math.pow((rowY/h-tearY)/.035,2))*tear*bw*.16;
+   for(let s=0;s<=steps;s++){const u=s/steps*2-1,fade=Math.pow(1-u*u,.18);
+    const a=clock*(.55+t*.5)+i*.045+shift;
+    const y=rowY+amp*fade*Math.sin(freq*Math.PI*u+a)
+              +amp*.22*fade*Math.sin(freq*2.17*Math.PI*u-a*1.37);
+    const x=w*.5+u*span+dx*(.35+fade)+slide;
+    if(s===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}}
+  ctx.stroke()};
+
+ const paint=()=>{if(!size())return;
+  // An 18s round trip between the two silhouettes.
+  morph=.5-.5*Math.cos(clock*(Math.PI*2/18));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);
+  // The channels diverge further the more the stack is excited, so a touch
+  // reads as the colours coming apart and not only as more movement.
+  const split=Math.min(w,h*1.7)*.004*(1+heat*5.2);
+  ctx.lineWidth=Math.max(.75,Math.min(1.35,w/520));
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.92;
+  channel('#f00',-split,-.16*(1+heat));
+  channel('#0f0',0,0);
+  channel('#00f',split,.16*(1+heat));
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'};
+
+ const frame=now=>{const dt=last===null?0:Math.min(.05,(now-last)/1000);last=now;
+  clock+=dt;
+  // Blooms fast under the finger, relaxes slowly after.
+  heat+=((held?1:0)-heat)*Math.min(1,dt*(held?9:1.6));
+  tear+=-tear*Math.min(1,dt*3.4);
+  paint();raf=requestAnimationFrame(frame)};
+
+ const sync=()=>{const run=inView&&!document.hidden&&!reduced.matches;
+  if(run&&!raf){last=null;raf=requestAnimationFrame(frame)}
+  else if(!run&&raf){cancelAnimationFrame(raf);raf=0}};
+
+ const at=e=>{const r=root.getBoundingClientRect();return (e.clientY-r.top)/Math.max(r.height,1)};
+ const grab=e=>{const y=at(e);held=true;
+  const jump=Math.abs(y-heatY);heatY=y;
+  if(tear<1||jump>.06){tearY=y;tear=1}
+  if(reduced.matches){heat=1;paint()}};
+ const track=e=>{if(!held)return;const y=at(e),jump=Math.abs(y-heatY);heatY=y;
+  if(jump>.06){tear=Math.min(1,tear+jump*2.4);tearY=y}
+  if(reduced.matches)paint()};
+ const drop=()=>{held=false;if(reduced.matches){heat=0;tear=0;paint()}};
+ root.addEventListener('pointerdown',e=>{grab(e);
+  if(root.setPointerCapture&&e.pointerId!==undefined){try{root.setPointerCapture(e.pointerId)}catch{/* capture unavailable */}}});
+ root.addEventListener('pointermove',track);
+ root.addEventListener('pointerup',drop);
+ root.addEventListener('pointercancel',drop);
+ root.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')drop()});
+
+ new ResizeObserver(()=>{size();if(!raf)paint()}).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();paint()});
+ clock=3.4;size();sync();paint();
+ return{get rows(){return ROWS}}}
+
+const oscCard=document.querySelector('#osc-demo');
+if(oscCard){const oscHTML=oscCard.outerHTML;
+ wireOsc(oscCard);
+ Object.assign(prototypes,{oscillation:{title:'Oscillation',html:oscHTML,
+  css:'*{box-sizing:border-box}body{background:#000;margin:0}'+cssFor(/^\.osc/)
+   +'.osc-scene{position:relative;inset:auto;width:min(620px,92vw);aspect-ratio:3/4}',
+  js:'/* Oscillation. A stack of waveforms drawn once per colour channel, the\n'
+   +'   copies pulled apart so they fringe where they disagree and go white\n'
+   +'   where they agree. Additive compositing does the colour: it is the\n'
+   +'   density, not a palette. Silhouette and wavelength gradient after an RGB\n'
+   +'   waveform stack the site owner shared; the implementation and the touch\n'
+   +'   response are original. */\n'
+   +wireOsc.toString()+";wireOsc(document.querySelector('.osc-scene'));"}});
+}
