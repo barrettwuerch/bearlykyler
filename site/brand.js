@@ -1707,3 +1707,444 @@ if(oscCard){const oscHTML=oscCard.outerHTML;
    +'   response are original. */\n'
    +wireOsc.toString()+";wireOsc(document.querySelector('.osc-scene'));"}});
 }
+/* Voice. A listening orb: one fragment shader over a single triangle, with an
+   idle state and a thinking state it crossfades between. The shader is the
+   WebGL2 port of a WebGPU/WGSL "Glass Liquid" orb the site owner shared,
+   trimmed to the one preset this card uses — the spectrum voice field and its
+   glass shell. The trim is pixel-identical to the full shader at every phase
+   tested; every other preset, the noise bank and the palette ramp are gone.
+   Where WebGL2 is missing the card paints a still marble on a 2D context
+   instead of leaving an empty box. */
+const VOX_FRAG=`#version 300 es
+precision highp float;
+uniform vec4 P[22];
+in vec2 vUv;
+out vec4 fragColor;
+
+#define u_size        P[0].xy
+#define u_time        P[0].z
+#define u_speed       P[0].w
+#define u_radius      P[1].x
+#define u_zoom        P[1].y
+#define u_warp        P[1].z
+#define u_ridgeAmt    P[1].w
+#define u_shade       P[2].y
+#define u_sheen       P[2].z
+#define u_gloss       P[2].w
+#define u_shellMidA   P[3].x
+#define u_shellEdgeA  P[3].y
+#define u_exposure    P[3].z
+#define u_style       P[3].w
+#define u_edgeSoft    P[4].x
+#define u_edgeGlow    P[4].y
+#define u_glassOn     P[4].w
+#define u_glassOpac   P[5].x
+#define u_contour     P[5].y
+#define u_colorA      P[10].rgb
+#define u_colorB      P[11].rgb
+#define u_colorC      P[12].rgb
+#define u_colorD      P[13].rgb
+#define u_highlight   P[14].rgb
+#define u_shellInner  P[15].rgb
+#define u_shellMid    P[16].rgb
+#define u_shellEdge   P[17].rgb
+#define u_sheenColor  P[18].rgb
+#define u_specColor   P[19].rgb
+#define u_canvasColor P[20].rgb
+#define u_glowColor   P[21].rgb
+
+// ── edge bank ───────────────────────────────────────────────────────────────
+float mfEdgeD(float soft){ return soft - 0.005; }
+
+vec3 mfEdgeGlow(vec3 col, vec2 uv, vec2 ctr, float rad,
+                float soft, float glow, vec3 glowRGB){
+  if (glow <= 0.0) { return col; }
+  float r = length(uv - ctr);
+  float outside = smoothstep(rad - max(soft, 0.0005), rad + max(soft, 0.0005), r);
+  return col + glowRGB * (glow * exp(-max(r - rad, 0.0) * 11.0) * outside);
+}
+
+// ── palette ramp bank ───────────────────────────────────────────────────────
+// ── geometry + diffusion constants ──────────────────────────────────────────
+const float GL_FU = 0.88172043;
+const float GL_BSIG_CLEAR = 0.018;
+const float GL_BSIG_GLASS = 0.0399;
+const float GL_KA  = 6.0;
+const float GL_KG  = 4.1209;
+const float GL_KWA = 0.5;
+const float GL_KR  = 0.32;
+const float GL_GH  = 1.73205081;
+const float GL_CLEAR_EA = 0.995;
+const float GL_CLEAR_EB = 1.04;
+
+// ── the liquid noise bank ───────────────────────────────────────────────────
+// Returns .x the attenuated value and .y the standard deviation of the detail
+// the frequency-domain blur removed — what a following nonlinearity has to
+// integrate back over.
+// Three-point Gauss-Hermite over the detail the blur took out.
+vec3 glsFinishEmissionFluid(vec3 colorIn, vec2 p){
+  vec3 color = colorIn;
+  if (u_glassOn > 0.5) {
+    color = mix(color, u_highlight,
+                u_shade * 0.22 * smoothstep(0.15, 1.15, dot(p, vec2(-0.32, 0.78))));
+  }
+  color = color * (1.0 - u_shade * 0.34 * smoothstep(-0.1, 1.2, dot(p, vec2(0.45, -0.62))));
+  color = color * (1.0 - u_shade * 0.22 * smoothstep(0.72, 1.08, length(p)));
+  return clamp(color, vec3(0.0), vec3(1.0));
+}
+
+// ── style 9 · Siri bands ────────────────────────────────────────────────────
+// ── style 14 · spectrum (the voice field) ───────────────────────────────────
+float glsSpectrumHeight(vec2 q, float t, float frequency,
+                        float phaseOffset, float amplitude){
+  float x = q.x * 2.15;
+  float envelope = pow(4.0 / (4.0 + x * x), 4.0);
+  float breathing = 0.82 + 0.18 * sin(t * 0.48 + phaseOffset * 0.7);
+  float wave = abs(sin(frequency * x - t * 1.36 + phaseOffset));
+  return envelope * amplitude * breathing * (0.28 + 0.72 * wave);
+}
+
+float glsSpectrumLayer(vec2 q, float height, float softness){
+  return (1.0 - smoothstep(max(height - softness, 0.0), height + softness, abs(q.y)))
+         * smoothstep(0.0, 0.045, height);
+}
+
+vec3 glsSpectrumFluid(vec2 p, float t){
+  float scale = 0.74 + u_zoom * 0.34;
+  vec2 q = p / scale;
+  float amplitude = 0.26 + u_ridgeAmt * 0.27;
+  float frequency = 0.72 + u_warp * 0.095;
+  float softness = 0.026 + (1.0 - u_ridgeAmt) * 0.032;
+  float h0 = glsSpectrumHeight(q, t, frequency * 0.82, -1.2, amplitude * 0.72);
+  float h1 = glsSpectrumHeight(q, t, frequency, 0.45, amplitude);
+  float h2 = glsSpectrumHeight(q, t, frequency * 1.17, 2.05, amplitude * 0.82);
+  float l0 = glsSpectrumLayer(q, h0, softness);
+  float l1 = glsSpectrumLayer(q, h1, softness);
+  float l2 = glsSpectrumLayer(q, h2, softness);
+  float spectrumX = q.x * 2.15;
+  float envelope = pow(4.0 / (4.0 + spectrumX * spectrumX), 4.0);
+  float support = exp(-q.y * q.y / 0.00072) * envelope;
+  float total = l0 + l1 + l2;
+  vec3 spectral = (u_colorB * l0 + u_colorC * l1 + u_colorD * l2) / max(total, 0.001);
+  float glassFill = (u_glassOn > 0.5) ? 1.0 : 0.0;
+  vec3 color = u_colorD * 0.025 * glassFill + spectral * (1.0 - exp(-total * 0.86));
+  color = color + u_colorA * support * 0.58;
+  color = color / (vec3(1.0) + color * 0.2);
+  return glsFinishEmissionFluid(color, p);
+}
+
+// ── style 15 · frost ────────────────────────────────────────────────────────
+// ── style 21 · violet ember ─────────────────────────────────────────────────
+// ── style 22 · chromatic metal ──────────────────────────────────────────────
+// ── the shell ───────────────────────────────────────────────────────────────
+vec3 glsOver(vec3 dst, vec3 src, float a){
+  float k = clamp(a, 0.0, 1.0);
+  return src * k + dst * (1.0 - k);
+}
+
+float glsRefractionProfile(float t){
+  float depth = clamp(t, 0.0, 1.0);
+  float circular = sqrt(max(1.0 - (1.0 - depth) * (1.0 - depth), 0.0));
+  return 1.0 - circular;
+}
+
+float glsHighlightLobe(vec2 normal, vec2 direction, float cut, float power){
+  float angular = clamp((dot(normal, direction) - cut) / max(1.0 - cut, 0.001), 0.0, 1.0);
+  return pow(angular, power);
+}
+
+vec2 glsContourWave(float angle, float t){
+  int style = int(u_style + 0.5);
+  if (style == 19) {
+    float wave = sin(angle * 2.0 + t * 0.27) * 0.72 + sin(angle * 4.0 - t * 0.16 + 2.1) * 0.28;
+    float slope = cos(angle * 2.0 + t * 0.27) * 1.44 + cos(angle * 4.0 - t * 0.16 + 2.1) * 1.12;
+    return vec2(wave, slope);
+  }
+  float wave = sin(angle * 3.0 + t * 0.62) * 0.52
+             + sin(angle * 5.0 - t * 0.41 + 1.7) * 0.31
+             + sin(angle * 2.0 + t * 0.23 + 3.1) * 0.17;
+  float slope = cos(angle * 3.0 + t * 0.62) * 1.56
+              + cos(angle * 5.0 - t * 0.41 + 1.7) * 1.55
+              + cos(angle * 2.0 + t * 0.23 + 3.1) * 0.34;
+  return vec2(wave, slope);
+}
+
+float glsContourStrength(){
+  if (u_style >= 18.5) { return 0.11; }
+  return (u_style >= 15.5) ? 0.16 : 0.09;
+}
+
+float glsContourScale(vec2 uv, float t, float amount){
+  if (amount <= 0.0) { return 1.0; }
+  vec2 contour = glsContourWave(atan(uv.y, uv.x), t);
+  return 1.0 + clamp(amount, 0.0, 1.0) * glsContourStrength() * contour.x;
+}
+
+vec2 glsContourNormal(vec2 uv, float rad, float t, float amount){
+  float distance = length(uv);
+  if (distance <= 0.0001) { return vec2(0.0); }
+  vec2 radial = uv / distance;
+  vec2 contour = glsContourWave(atan(uv.y, uv.x), t);
+  float slope = clamp(amount, 0.0, 1.0) * glsContourStrength() * contour.y;
+  vec2 tangent = vec2(-radial.y, radial.x);
+  return normalize(radial - tangent * (rad * slope / distance));
+}
+
+vec4 orbGlassLiquidAnim(vec2 uv01){
+  vec2 fc = vec2(uv01.x, 1.0 - uv01.y) * u_size;
+  vec2 uv = (2.0 * fc - u_size) / max(min(u_size.x, u_size.y), 1.0);
+
+  float rad = max(u_radius, 0.05);
+  float t = u_time * u_speed;
+  int s = int(u_style + 0.5);
+  bool emissionOnly = u_glassOn <= 0.5 && (s == 9 || s == 14);
+  float contourRad = rad * glsContourScale(uv, t, u_contour);
+
+  if (length(uv) > contourRad * (1.01 + mfEdgeD(u_edgeSoft))) {
+    vec3 halo = clamp(mfEdgeGlow(vec3(0.0), uv, vec2(0.0), contourRad,
+                                 u_edgeSoft, u_edgeGlow, u_glowColor),
+                      vec3(0.0), vec3(1.0));
+    return vec4(halo, max(halo.r, max(halo.g, halo.b)));
+  }
+
+  vec2 p  = uv / contourRad;
+  float pd = length(p);
+
+  float clearFa = 1.0 - smoothstep(GL_CLEAR_EA, GL_CLEAR_EB, pd);
+  vec2 normal = glsContourNormal(uv, rad, t, u_contour);
+  float edgeDepth = max(1.0 - pd, 0.0);
+  float refractionWidth = 0.015 + 0.95 * clamp(u_shellMidA, 0.0, 1.0);
+  float refractionT = edgeDepth / max(refractionWidth, 0.001);
+  float refractionProfile = pow(glsRefractionProfile(refractionT), 0.68);
+  float refractionAmount = 1.6 * clamp(u_glassOpac, 0.0, 1.0) * refractionProfile;
+  vec2 refractedP = p - normal * refractionAmount;
+  vec3 fcol = vec3(0.0);
+  if (clearFa > 0.0) {
+    if (u_glassOn > 0.5) {
+      float channelSplit = 0.14 * clamp(u_gloss, 0.0, 2.0)
+                         * clamp(u_glassOpac, 0.0, 1.0) * refractionProfile;
+      // glsRefractionProfile() is EXACTLY zero once edgeDepth passes
+      // refractionWidth, so over the inner ~66% of the disc the three channel
+      // samples are the same sample. Taking it once there is bit-identical,
+      // not an approximation -- and it is two thirds of the fluid evaluations
+      // in the frame.
+      if (channelSplit > 0.0) {
+        vec3 redSample   = glsSpectrumFluid(refractedP - normal * channelSplit, t);
+        vec3 greenSample = glsSpectrumFluid(refractedP, t);
+        vec3 blueSample  = glsSpectrumFluid(refractedP + normal * channelSplit, t);
+        fcol = vec3(redSample.r, greenSample.g, blueSample.b);
+      } else {
+        fcol = glsSpectrumFluid(refractedP, t);
+      }
+    } else {
+      fcol = glsSpectrumFluid(p, t);
+    }
+  }
+
+  float lum = dot(fcol, vec3(0.213, 0.715, 0.072));
+  vec3 clearSat = clamp(vec3(lum) + (fcol - vec3(lum)) * 1.22, vec3(0.0), vec3(1.0));
+  vec3 col = glsOver(u_canvasColor, clearSat, 0.99 * clearFa);
+  if (emissionOnly) {
+    float signal = max(clearSat.r, max(clearSat.g, clearSat.b));
+    col = clearSat * smoothstep(0.025, 0.16, signal);
+  }
+  if (u_glassOn > 0.5) {
+    float surfaceWidth = 0.026 + 0.055 * clamp(u_shellEdgeA, 0.0, 1.0);
+    float surfaceBand = (1.0 - smoothstep(0.0, surfaceWidth, edgeDepth)) * clearFa;
+    float opticalRim = pow(surfaceBand, 1.8);
+    col = glsOver(col, u_shellInner, opticalRim * u_glassOpac * 0.45);
+
+    vec2 coolDirection = normalize(vec2(0.84, 0.54));
+    vec2 warmDirection = normalize(vec2(-0.62, -0.78));
+    float coolSplit = glsHighlightLobe(normal, coolDirection, -0.32, 1.8);
+    float warmSplit = glsHighlightLobe(normal, warmDirection, -0.28, 2.0);
+    float dispersion = opticalRim * clamp(u_gloss, 0.0, 2.0) * (0.8 + 0.8 * u_shellEdgeA);
+    col = glsOver(col, u_shellMid,  dispersion * coolSplit);
+    col = glsOver(col, u_shellEdge, dispersion * warmSplit);
+
+    float edgeShadow = opticalRim * (0.015 + 0.15 * u_shellEdgeA)
+                     * (0.15 + 0.85 * max(dot(normal, vec2(0.45, -0.89)), 0.0));
+    col = col * (1.0 - edgeShadow);
+
+    vec2 keyDirection = normalize(vec2(-0.68, 0.73));
+    vec2 fillDirection = normalize(vec2(0.74, -0.67));
+    float key = opticalRim * glsHighlightLobe(normal, keyDirection, 0.2, 2.8)
+              * clamp(u_sheen, 0.0, 2.0) * 1.4;
+    float fill = opticalRim * glsHighlightLobe(normal, fillDirection, 0.4, 3.6)
+               * clamp(u_sheen, 0.0, 2.0) * 1.0;
+    col = glsOver(col, u_sheenColor, key);
+    col = glsOver(col, u_specColor, fill);
+  }
+
+  float ballA = 1.0 - smoothstep(0.99 - mfEdgeD(u_edgeSoft), 1.01 + mfEdgeD(u_edgeSoft), pd);
+  col = clamp(col * max(u_exposure, 0.0), vec3(0.0), vec3(1.0)) * ballA;
+  vec3 edged = mfEdgeGlow(col, uv, vec2(0.0), contourRad, u_edgeSoft, u_edgeGlow, u_glowColor);
+  vec3 finalColor = clamp(edged, vec3(0.0), vec3(1.0));
+  float emissionAlpha = max(finalColor.r, max(finalColor.g, finalColor.b));
+  float sphereAlpha = clamp(max(ballA, emissionAlpha), 0.0, 1.0);
+  return vec4(finalColor, emissionOnly ? emissionAlpha : sphereAlpha);
+}
+
+void main(){
+  vec4 c = orbGlassLiquidAnim(vUv);
+
+  vec2 fc = vec2(vUv.x, 1.0 - vUv.y) * u_size;
+  vec2 uv = (2.0 * fc - u_size) / max(min(u_size.x, u_size.y), 1.0);
+  float rad = max(u_radius, 0.05);
+  float t = u_time * u_speed;
+  float contourRad = rad * glsContourScale(uv, t, u_contour);
+  vec2 q = (2.0 * fc - u_size) / u_size;
+  float fitEnd = 1.0;
+  float fitFeather = 2.0 / max(min(u_size.x, u_size.y), 1.0);
+  float fitStart = min(mix(contourRad, fitEnd, 0.5), fitEnd - fitFeather);
+  float fit = 1.0 - smoothstep(fitStart, fitEnd, max(abs(q.x), abs(q.y)));
+  fragColor = vec4(c.rgb * fit, c.a * fit);
+}
+`;
+const VOX_VERT=`#version 300 es
+precision highp float;
+out vec2 vUv;
+void main(){
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)) * 2.0 - 1.0;
+  gl_Position = vec4(p, 0.0, 1.0);
+  vec2 uv01 = (p + vec2(1.0)) * 0.5;
+  vUv = vec2(uv01.x, 1.0 - uv01.y);
+}
+`;
+/* 88 floats: 40 scalars, then 12 colours as vec4s. Same order the shader's
+   uniform block declares, so the seed can be uploaded straight in. */
+const VOX_SEEDS={idle:[
+  1,1,0,0.486,0.72,0.4232,1.936,0.2736,
+  2.2,0.06,0.26,0.24,0.18,0.18,0.93,14,
+  0.005,0,0,1,0.4,0.009,2,0.42,
+  0.77,0.23,65,0,0,1,0.22,0.25,
+  0.72,5,0.42,1.25,0.55,0.3,1.2,0.7,
+  0.7058824,0.7333333,0.7607843,1,0.1568628,0.3647059,0.5607843,1,
+  0.5686275,0.3137255,0.4352941,1,0.2470588,0.5333334,0.4509804,1,
+  0.8470588,0.8666667,0.8823529,1,1,1,1,1,
+  0.4,0.9098039,1,1,0.8235294,0.4235294,1,1,
+  0.9176471,0.9568627,1,1,0.8627451,0.9176471,1,1,
+  0.0117647,0.0156863,0.0392157,1,0.2196078,0.4039216,0.5372549,1
+],thinking:[
+  1,1,0,1.8,0.72,0.46,4.4,0.72,
+  2.2,0.06,0.26,0.24,0.18,0.18,1.5,14,
+  0.005,0,0,1,0.4,0.03,2,0.42,
+  0.77,0.23,65,0,0,1,0.22,0.25,
+  0.72,5,0.42,1.25,0.55,0.3,1.2,0.7,
+  1,1,1,1,0.0862745,0.4666667,1,1,
+  0.9490196,0.2862745,0.627451,1,0.2078431,0.9019608,0.6980392,1,
+  1,1,1,1,1,1,1,1,
+  0.4,0.9098039,1,1,0.8235294,0.4235294,1,1,
+  0.9176471,0.9568627,1,1,0.8627451,0.9176471,1,1,
+  0.0117647,0.0156863,0.0392157,1,0.0862745,0.4666667,1,1
+]};
+
+function wireVox(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.vox-canvas');
+ const ACTIVATE=170,SETTLE=650;
+ const toLin=v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+ const toSrgb=v=>v<=.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-.055;
+ // Colour crossfades run in linear light; mixing sRGB directly muddies the
+ // midpoint, which on this palette turns the pink band grey as it arrives.
+ const mixSrgb=(a,b,k)=>toSrgb(toLin(a)+(toLin(b)-toLin(a))*k);
+
+ const gl=canvas.getContext('webgl2',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false});
+ let state='idle',toState='idle',from=new Float32Array(VOX_SEEDS.idle),
+  target=new Float32Array(VOX_SEEDS.idle),shown=new Float32Array(VOX_SEEDS.idle),
+  startedAt=0,duration=0,phase=0,last=null,raf=0,inView=true,loc=null,values=null;
+
+ const progress=now=>{if(duration===0)return 1;
+  const raw=Math.min(1,Math.max(0,(now-startedAt)/duration));
+  return toState==='thinking'?1-Math.pow(1-raw,3):raw*raw*(3-2*raw)};
+ const sample=now=>{const k=progress(now);
+  for(let i=3;i<shown.length;i++){const col=i>=40&&(i-40)%4<3;
+   shown[i]=col?mixSrgb(from[i],target[i],k):from[i]+(target[i]-from[i])*k}
+  return shown};
+
+ const size=()=>{const dpr=Math.min(devicePixelRatio||1,2);
+  const cw=root.clientWidth,ch=root.clientHeight;if(!cw||!ch)return false;
+  const w=Math.round(cw*dpr),h=Math.round(ch*dpr);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
+  return true};
+
+ if(!gl){
+  // No WebGL2: a still marble, so the card is never an empty square.
+  const ctx=canvas.getContext('2d');
+  const paint2d=()=>{if(!size())return;const w=canvas.width,h=canvas.height;
+   const r=Math.min(w,h)*.36,cx=w/2,cy=h/2;
+   ctx.clearRect(0,0,w,h);
+   const g=ctx.createRadialGradient(cx-r*.3,cy-r*.35,r*.1,cx,cy,r);
+   g.addColorStop(0,'#2b3c4e');g.addColorStop(.55,'#0d1218');g.addColorStop(1,'#05070b');
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+   const band=ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+   band.addColorStop(0,'rgba(143,182,232,0)');band.addColorStop(.5,'rgba(214,232,255,.9)');
+   band.addColorStop(1,'rgba(143,182,232,0)');
+   ctx.fillStyle=band;ctx.fillRect(cx-r,cy-r*.035,r*2,r*.07)};
+  new ResizeObserver(paint2d).observe(root);paint2d();
+  return{get state(){return state},supported:false}}
+
+ const compile=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s};
+ const prog=gl.createProgram();
+ gl.attachShader(prog,compile(gl.VERTEX_SHADER,VOX_VERT));
+ gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,VOX_FRAG));
+ gl.linkProgram(prog);
+ if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(prog));
+ gl.useProgram(prog);
+ loc=gl.getUniformLocation(prog,'P[0]');
+ gl.bindVertexArray(gl.createVertexArray());
+ gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+ values=new Float32Array(shown);
+
+ const paint=now=>{if(!size())return;
+  gl.viewport(0,0,canvas.width,canvas.height);
+  values.set(sample(now));
+  const dt=last===null?0:Math.min(.05,(now-last)/1000);last=now;
+  // Phase is integrated against speed rather than read from the clock, so a
+  // state change alters the rate without jumping the wave.
+  phase+=dt*Math.max(values[3],0);
+  values[0]=canvas.width;values[1]=canvas.height;
+  values[2]=phase/Math.max(values[3],.001);
+  gl.uniform4fv(loc,values);
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLES,0,3)};
+
+ const frame=now=>{paint(now);raf=requestAnimationFrame(frame)};
+ const sync=()=>{const run=inView&&!document.hidden&&!reduced.matches;
+  if(run&&!raf){last=null;raf=requestAnimationFrame(frame)}
+  else if(!run&&raf){cancelAnimationFrame(raf);raf=0}};
+
+ const setState=next=>{if(next===state||!VOX_SEEDS[next])return;
+  const now=performance.now();sample(now);
+  from=new Float32Array(shown);target=new Float32Array(VOX_SEEDS[next]);
+  toState=next;startedAt=now;duration=next==='thinking'?ACTIVATE:SETTLE;state=next;
+  if(reduced.matches)paint(now)};
+
+ root.addEventListener('click',()=>setState(state==='idle'?'thinking':'idle'));
+ new ResizeObserver(()=>{size();if(!raf)paint(performance.now())}).observe(root);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();paint(performance.now())});
+ phase=6.2;size();sync();paint(performance.now());
+ return{get state(){return state},setState,supported:true}}
+
+const voxCard=document.querySelector('#vox-demo');
+if(voxCard){const voxHTML=voxCard.outerHTML;
+ try{wireVox(voxCard)}catch(err){/* a shader that will not build must not take the page with it */}
+ Object.assign(prototypes,{voice:{title:'Listening',html:voxHTML,
+  css:'*{box-sizing:border-box}body{background:#f5f5f3;margin:0;display:grid;place-items:center;min-height:100vh}'
+   +cssFor(/^\.vox/)
+   +'.vox-scene{position:relative;inset:auto;width:min(520px,92vw);aspect-ratio:1}',
+  js:[
+   '/* Listening. A voice orb: one fragment shader over a single triangle, with',
+   '   an idle state and a thinking state it crossfades between in linear light.',
+   '   WebGL2 port of a WebGPU/WGSL orb supplied by the site owner, trimmed to',
+   '   the one preset used here and verified pixel-identical to the original at',
+   '   every phase tested. Falls back to a still marble on a 2D context where',
+   '   WebGL2 is missing. */',
+   'const VOX_FRAG='+JSON.stringify(VOX_FRAG)+';',
+   'const VOX_VERT='+JSON.stringify(VOX_VERT)+';',
+   'const VOX_SEEDS='+JSON.stringify(VOX_SEEDS)+';',
+   wireVox.toString()+";wireVox(document.querySelector('.vox-scene'));"
+  ].join(String.fromCharCode(10))}});
+}
