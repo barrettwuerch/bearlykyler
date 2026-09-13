@@ -2148,3 +2148,107 @@ if(voxCard){const voxHTML=voxCard.outerHTML;
    wireVox.toString()+";wireVox(document.querySelector('.vox-scene'));"
   ].join(String.fromCharCode(10))}});
 }
+/* Letterfall. A word rasterised once to an offscreen canvas; every grid cell
+   inside the glyph becomes a target, and the particles are thrown in from
+   below and sprung into place. Pointer pushes them out of shape; tap throws
+   them again. Technique after a particle-typography experiment the site owner
+   shared, reimplemented in vanilla.
+
+   The trap worth naming: the glyph must be sampled AFTER document.fonts.ready.
+   Sample it sooner and you measure the fallback face, so every particle lands
+   in the wrong shape — and it only misfires on a cold load, which is exactly
+   what makes it easy to ship. */
+function wireLetterfall(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.lf-canvas'),ctx=canvas.getContext('2d');
+ const WORD='BEAR',STEP=7,DOT=3.5,PUSH=120,SPRING=10,DAMP=3.4,LAUNCH=900;
+ const INK=['#b77637','#d99a4e','#8fc5e8','#8fae86','#c2564a','#e9d9bd'];
+ const hash=n=>{const x=Math.sin(n*12.9898)*43758.5453;return x-Math.floor(x)};
+ let w=0,h=0,dpr=1,parts=[],pointer=null,raf=0,last=null,acc=0,inView=false,ready=false;
+
+ const size=()=>{dpr=Math.min(devicePixelRatio||1,2);
+  const cw=root.clientWidth,ch=root.clientHeight;if(!cw||!ch)return false;
+  const nw=Math.round(cw*dpr),nh=Math.round(ch*dpr);
+  if(canvas.width!==nw||canvas.height!==nh){canvas.width=nw;canvas.height=nh}
+  w=cw;h=ch;return true};
+
+ /* Draw the word once, keep every grid cell whose alpha clears the threshold. */
+ const sample=()=>{const off=document.createElement('canvas');
+  off.width=Math.max(1,Math.round(w));off.height=Math.max(1,Math.round(h));
+  const o=off.getContext('2d',{willReadFrequently:true});
+  o.textAlign='center';o.textBaseline='middle';
+  let px=Math.round(h*.62);
+  for(let i=0;i<24;i++){o.font='900 '+px+'px Nunito,Arial,sans-serif';
+   if(o.measureText(WORD).width<=off.width*.84)break;px=Math.round(px*.92)}
+  o.fillStyle='#fff';o.fillText(WORD,off.width/2,off.height/2);
+  const d=o.getImageData(0,0,off.width,off.height).data,out=[];
+  for(let y=0;y<off.height;y+=STEP)for(let x=0;x<off.width;x+=STEP){
+   if(d[(y*off.width+x)*4+3]>130){const n=out.length;
+    out.push({tx:x+(hash(n)-.5)*STEP*.9,ty:y+(hash(n+91)-.5)*STEP*.9,
+     r:DOT*(.55+hash(n+7)*.95),c:INK[(n*7+((x+y)|0))%INK.length],seed:n})}}
+  return out};
+
+ const throwIn=()=>{parts=sample().map(s=>Object.assign({},s,{
+  x:s.tx+(hash(s.seed+31)-.5)*w*.22,
+  y:h+24+hash(s.seed+53)*h*.5,
+  vx:(hash(s.seed+71)-.5)*220,
+  vy:-LAUNCH*(.62+hash(s.seed+17)*.7)}))};
+
+ const settle=()=>{for(const p of parts){p.x=p.tx;p.y=p.ty;p.vx=p.vy=0}};
+
+ const step=dt=>{for(const p of parts){
+  p.vx+=(p.tx-p.x)*SPRING*dt;p.vy+=(p.ty-p.y)*SPRING*dt;
+  if(pointer){const dx=p.x-pointer.x,dy=p.y-pointer.y,d=Math.hypot(dx,dy);
+   if(d<PUSH&&d>.01){const f=(1-d/PUSH)*2600*dt;p.vx+=dx/d*f;p.vy+=dy/d*f}}
+  const k=Math.exp(-DAMP*dt);p.vx*=k;p.vy*=k;p.x+=p.vx*dt;p.y+=p.vy*dt}};
+
+ const paint=()=>{ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  for(const p of parts){ctx.fillStyle=p.c;ctx.beginPath();
+   ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}};
+
+ const frame=now=>{const raw=last===null?0:(now-last)/1000;last=now;
+  acc=Math.min(acc+raw,.2);const S=1/60;
+  while(acc>=S){step(S);acc-=S}
+  paint();raf=requestAnimationFrame(frame)};
+
+ const sync=()=>{const run=ready&&inView&&!document.hidden&&!reduced.matches;
+  if(run&&!raf){last=null;raf=requestAnimationFrame(frame)}
+  else if(!run&&raf){cancelAnimationFrame(raf);raf=0}};
+
+ const at=e=>{const r=root.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+ root.addEventListener('pointermove',e=>{pointer=at(e)});
+ root.addEventListener('pointerdown',e=>{pointer=at(e)});
+ root.addEventListener('pointerleave',()=>{pointer=null});
+ root.addEventListener('pointercancel',()=>{pointer=null});
+ // A tap has nothing to push with, so it throws the word again instead.
+ root.addEventListener('click',()=>{if(!ready)return;throwIn();
+  if(reduced.matches){settle();paint()}});
+
+ new ResizeObserver(()=>{if(!size())return;throwIn();
+  if(reduced.matches||!raf){settle();paint()}}).observe(root);
+ // The throw plays when the card first scrolls into view, not before.
+ let seen=false;
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;
+  if(inView&&!seen&&ready){seen=true;throwIn()}sync()}).observe(root);
+ document.addEventListener('visibilitychange',sync);
+ reduced.addEventListener('change',()=>{sync();if(reduced.matches){settle();paint()}});
+
+ (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve())
+  .then(()=>{if(!size())return;ready=true;throwIn();
+   if(reduced.matches){settle();paint()}else{if(inView)seen=true;sync();paint()}});
+ return{get count(){return parts.length}}}
+
+const lfCard=document.querySelector('#letterfall-demo');
+if(lfCard){const lfHTML=lfCard.outerHTML;
+ wireLetterfall(lfCard);
+ Object.assign(prototypes,{letterfall:{title:'Letterfall',html:lfHTML,
+  css:'*{box-sizing:border-box}body{background:#000;margin:0;display:grid;place-items:center;min-height:100vh}'
+   +cssFor(/^\.lf/)
+   +'.lf-scene{position:relative;inset:auto;width:min(760px,92vw);aspect-ratio:16/9;background:#101010}',
+  js:'/* Letterfall. A word rasterised once to an offscreen canvas; every grid\n'
+   +'   cell inside the glyph becomes a target, and the particles are thrown in\n'
+   +'   from below and sprung into place. Technique after a particle-typography\n'
+   +'   experiment supplied by the site owner, reimplemented in vanilla. The\n'
+   +'   glyph is sampled only after document.fonts.ready — sooner and you\n'
+   +'   measure the fallback face, and every particle lands in the wrong shape. */\n'
+   +wireLetterfall.toString()+";wireLetterfall(document.querySelector('.lf-scene'));"}});
+}
