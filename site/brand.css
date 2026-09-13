@@ -1153,3 +1153,53 @@ h1 em,h2 em,.specimen-title em{color:var(--blue-ink)!important}
  margin:0;background:none;cursor:crosshair;display:block;touch-action:pan-y;
  -webkit-tap-highlight-color:transparent}
 .lf-canvas{display:block;width:100%;height:100%}
+
+/* Signature. A signing pad whose Clear takes the ink apart. The gallery's own
+   paper is the ground, so the panel is plain white and every grey in here is
+   neutral — no blue cast — because a contract should read soberly next to the
+   bear. Sized as a fixed panel rather than a full-bleed canvas so the corner
+   label keeps its own patch of ground. */
+.sig-pad{width:min(520px,100% - 48px);height:206px;display:flex;flex-direction:column;
+ background:#fff;border:1px solid #e6e8ea;border-radius:12px;overflow:hidden;
+ box-shadow:0 1px 2px #0f151c0d,0 10px 28px -16px #0f151c26}
+.sig-sheet{position:relative;flex:1;min-height:0;margin:10px 11px 6px;border-radius:8px;
+ background:#fbfbfc;overflow:hidden}
+/* touch-action only flips to none once the pad is armed, so an un-armed card
+   still scrolls under a thumb. A mouse never needs arming. */
+.sig-canvas{display:block;width:100%;height:100%;touch-action:pan-y;cursor:crosshair;
+ -webkit-tap-highlight-color:transparent}
+.sig-pad.armed .sig-canvas{touch-action:none}
+.sig-rule{position:absolute;left:30px;right:18px;bottom:26px;height:0;
+ border-top:1.5px dashed #cdd2d7;pointer-events:none}
+.sig-rule::before{content:'\00d7';position:absolute;left:-19px;top:-15px;
+ font:700 18px Nunito,Arial,sans-serif;color:#cdd2d7}
+.sig-ghost{position:absolute;left:0;right:0;top:38%;margin:0;text-align:center;
+ pointer-events:none;font:400 14px Nunito,Arial,sans-serif;color:#6b7480;
+ transition:opacity .25s}
+.sig-pad.inked .sig-ghost{opacity:0}
+.sig-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:0 12px 11px}
+.sig-cycle{display:inline-flex;align-items:center;gap:7px;border:0;background:none;
+ padding:6px 2px;color:#6b7480;font:700 12px Nunito,Arial,sans-serif;cursor:pointer}
+.sig-cycle b{font:900 12px Nunito,Arial,sans-serif;color:#1d2126;min-width:44px;
+ text-align:left}
+.sig-cycle svg{width:13px;height:13px;flex:none;transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+.sig-cycle:hover svg,.sig-cycle:focus-visible svg{transform:rotate(180deg)}
+.sig-clear{border:0;border-radius:22px;background:#1d2126;color:#fff;cursor:pointer;
+ font:900 13px Nunito,Arial,sans-serif;padding:10px 17px;display:inline-flex;
+ align-items:center;gap:8px;transition:transform .12s,opacity .2s}
+.sig-clear:active{transform:scale(.96)}
+.sig-clear[disabled]{opacity:.35;cursor:default}
+.sig-clear svg{width:13px;height:13px}
+@media(max-width:600px){
+ .sig-pad{height:186px;width:min(520px,100% - 32px)}
+ .sig-rule{bottom:22px}
+ .sig-clear{padding:9px 14px}
+}
+/* The arming affordance, and it only exists where the problem does: on a
+   touch device the pad must swallow both axes to draw, so it stays inert
+   until you tap it. A mouse never needs telling. */
+.sig-hint{position:absolute;right:10px;top:8px;margin:0;pointer-events:none;
+ font:700 10px Nunito,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;
+ color:#6b7480;display:none;transition:opacity .2s}
+@media(hover:none){.sig-pad:not(.armed) .sig-hint{display:block}}

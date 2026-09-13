@@ -2262,3 +2262,225 @@ if(lfCard){const lfHTML=lfCard.outerHTML;
    +'   measure the fallback face, and every particle lands in the wrong shape. */\n'
    +wireLetterfall.toString()+";wireLetterfall(document.querySelector('.lf-scene'));"}});
 }
+
+/* Signature. The pad keeps the points your hand actually made, so clearing can
+   be a physical event rather than a wipe: the finished ink is read back with
+   getImageData and every inked device pixel becomes one speck, written straight
+   into an ImageData buffer — at this count nothing shaped is cheap enough.
+   Rewind is the exception and the point of the piece: it walks back along the
+   recorded path, which only a pad that stores stroke order can do. Technique
+   after a signature-pad dissolve supplied by the site owner, reimplemented in
+   vanilla. */
+function wireSignature(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const canvas=root.querySelector('.sig-canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true}),
+  clearBtn=root.querySelector('.sig-clear'),cycleBtn=root.querySelector('.sig-cycle'),
+  nameEl=root.querySelector('.sig-effect');
+ const EFFECTS=['Dust','Gust','Drop','Swirl','Rewind'];
+ const DUR={Dust:1500,Gust:1150,Drop:1650,Swirl:1500,Rewind:900};
+ const PEN='#1d2126',WIDE=3.1,THIN=1,MAX=32000;
+ let effect=0,dpr=1,w=0,h=0,strokes=[],cur=null,mode='draw',t0=0,last=0,raf=0,
+  inView=false,armed=false,hold=0;
+ const hash=n=>{const x=Math.sin(n*12.9898)*43758.5453;return x-Math.floor(x)};
+
+ const size=()=>{dpr=Math.min(devicePixelRatio||1,2);
+  const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return false;
+  const ow=w,oh=h;w=r.width;h=r.height;
+  const nw=Math.round(w*dpr),nh=Math.round(h*dpr);
+  if(canvas.width!==nw||canvas.height!==nh){canvas.width=nw;canvas.height=nh}
+  /* Stroke points are in CSS pixels, so a resize has to carry them along or
+     the signature slides off its own sheet. */
+  if(ow&&oh&&(ow!==w||oh!==h)){const sx=w/ow,sy=h/oh;
+   for(const s of strokes){for(const p of s.pts){p.x*=sx;p.y*=sy}
+    for(let i=0;i<s.w.length;i++)s.w[i]*=Math.min(sx,sy)}}
+  return true};
+
+ /* ---- the pen: width from speed, joined through midpoints ---- */
+ const widthFor=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),dt=Math.max(q.t-p.t,1);
+  return WIDE-(WIDE-THIN)*Math.min(d/dt*7,1)};
+
+ const drawStroke=(s,upTo)=>{const pts=s.pts,n=upTo===undefined?pts.length:upTo;
+  if(n<1)return;
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=PEN;
+  if(n===1){ctx.fillStyle=PEN;ctx.beginPath();
+   ctx.arc(pts[0].x,pts[0].y,WIDE/2,0,Math.PI*2);ctx.fill();return}
+  for(let i=1;i<n;i++){const p=pts[i-1],q=pts[i];
+   const ax=i===1?p.x:(pts[i-2].x+p.x)/2,ay=i===1?p.y:(pts[i-2].y+p.y)/2;
+   ctx.lineWidth=s.w[i];ctx.beginPath();ctx.moveTo(ax,ay);
+   ctx.quadraticCurveTo(p.x,p.y,(p.x+q.x)/2,(p.y+q.y)/2);ctx.stroke()}
+  const a=pts[n-2],b=pts[n-1];ctx.lineWidth=s.w[n-1];
+  ctx.beginPath();ctx.moveTo((a.x+b.x)/2,(a.y+b.y)/2);ctx.lineTo(b.x,b.y);ctx.stroke()};
+
+ const redraw=limit=>{ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  if(limit===undefined){for(const s of strokes)drawStroke(s);return}
+  let left=limit;
+  for(const s of strokes){if(left<=0)break;
+   drawStroke(s,Math.min(s.pts.length,left));left-=s.pts.length}};
+
+ const inked=()=>strokes.some(s=>s.pts.length);
+ const sync=()=>{root.classList.toggle('inked',inked());
+  clearBtn.disabled=!inked()||mode!=='draw'};
+
+ /* ---- particles ---- */
+ let img=null,buf=null,P=null;
+ const explode=()=>{const cw=canvas.width,ch=canvas.height;
+  const src=ctx.getImageData(0,0,cw,ch).data;
+  let n=0;for(let i=3;i<src.length;i+=4)if(src[i]>24)n++;
+  if(!n)return false;
+  const stride=Math.max(1,Math.round(Math.sqrt(n/MAX))),cap=Math.ceil(n/(stride*stride))+8;
+  P={x:new Float32Array(cap),y:new Float32Array(cap),vx:new Float32Array(cap),
+     vy:new Float32Array(cap),a:new Float32Array(cap),a0:new Float32Array(cap),
+     c:new Uint32Array(cap),s:new Float32Array(cap),big:new Uint8Array(cap),n:0};
+  for(let y=0;y<ch;y+=stride)for(let x=0;x<cw;x+=stride){const i=(y*cw+x)*4;
+   if(src[i+3]<=24)continue;const k=P.n++;
+   P.x[k]=x;P.y[k]=y;P.a0[k]=P.a[k]=src[i+3]/255;
+   P.c[k]=(src[i]|(src[i+1]<<8)|(src[i+2]<<16))>>>0;
+   P.s[k]=hash(k*1.7+.3);P.big[k]=hash(k+404)<.22?1:0}
+  img=ctx.createImageData(cw,ch);buf=new Uint32Array(img.data.buffer);
+  seed();return true};
+
+ const seed=()=>{const cw=canvas.width,ch=canvas.height,name=EFFECTS[effect],d=dpr;
+  for(let k=0;k<P.n;k++){const r=P.s[k],r2=hash(k*3.1+7),r3=hash(k*5.9+19);
+   if(name==='Dust'){P.vx[k]=(34+96*r)*d;P.vy[k]=-(16+82*r2)*d}
+   else if(name==='Gust'){P.vx[k]=(260+520*r)*d;P.vy[k]=(r2-.5)*70*d}
+   else if(name==='Drop'){P.vx[k]=(r-.5)*30*d;P.vy[k]=(-14+56*r2)*d}
+   else if(name==='Swirl'){const dx=P.x[k]-cw/2,dy=P.y[k]-ch/2;
+    /* polar, not velocity: the outer specks have to sweep the long way round */
+    P.vx[k]=Math.atan2(dy,dx);P.vy[k]=Math.hypot(dx,dy)}
+   P.a0[k]=P.a[k]*=.82+.35*r3}};
+
+ const advance=(dt,t)=>{const cw=canvas.width,ch=canvas.height,name=EFFECTS[effect],d=dpr;
+  const g=name==='Drop'?330*d:0;
+  for(let k=0;k<P.n;k++){if(P.a[k]<=0)continue;
+   const r=P.s[k];let delay=0;
+   if(name==='Dust')delay=(P.x[k]/cw)*.5+r*.16;
+   else if(name==='Gust')delay=(P.x[k]/cw)*.42+r*.16;
+   else if(name==='Drop')delay=r*.3;
+   let local=t;
+   if(delay>0){local=(t-delay)/(1-delay);if(local<=0)continue}
+   if(name==='Swirl'){const ang=P.vx[k]+(7.6+2.8*r)*t*t,rad=P.vy[k]*(1-Math.pow(t,2.1));
+    P.x[k]=cw/2+Math.cos(ang)*rad;P.y[k]=ch/2+Math.sin(ang)*rad}
+   else{P.vy[k]+=g*dt;
+    const curl=Math.sin(P.y[k]*.045+r*9)*34*d;
+    P.x[k]+=(P.vx[k]+curl)*dt;P.y[k]+=P.vy[k]*dt}
+   const fade=name==='Swirl'?1-t*t:name==='Drop'?1-local*local*local:1-local;
+   P.a[k]=fade>0?P.a0[k]*fade:0}};
+
+ const paint=()=>{const cw=canvas.width,ch=canvas.height;buf.fill(0);
+  for(let k=0;k<P.n;k++){const a=P.a[k];if(a<=.012)continue;
+   const px=P.x[k]|0,py=P.y[k]|0;
+   if(px<0||py<0||px>=cw||py>=ch)continue;
+   buf[py*cw+px]=(P.c[k]|((a*255)<<24))>>>0;
+   if(P.big[k]&&px+1<cw&&py+1<ch){const soft=(P.c[k]|((a*168)<<24))>>>0;
+    buf[py*cw+px+1]=soft;buf[(py+1)*cw+px]=soft}}
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cw,ch);ctx.putImageData(img,0,0)};
+
+ /* ---- the demo hand, so the tile is never a blank rectangle ---- */
+ const DEMO=[[[42,150],[58,118],[74,88],[92,66],[112,54],[132,58],[142,76],[140,100],
+  [128,124],[110,144],[92,158],[76,166],[64,168],[58,162],[62,150],[76,138],[96,128],
+  [118,124],[140,126],[158,134],[172,146],[180,158]],
+  [[196,92],[200,120],[204,146],[208,162],[214,150],[224,134],[236,126],[246,132],
+  [250,146],[252,158],[258,150],[270,138],[284,132],[296,136],[302,148],[306,160],
+  [318,156],[334,148],[352,146],[370,150],[386,156]]];
+ const demoStrokes=()=>{const sx=w/430,sy=h/230,out=[];
+  for(const path of DEMO){const s={pts:[],w:[]};
+   path.forEach((p,i)=>{const pt={x:p[0]*sx,y:p[1]*sy,t:i*17};s.pts.push(pt);
+    s.w.push(i?Math.max(THIN,s.w[i-1]+(widthFor(s.pts[i-1],pt)-s.w[i-1])*.4):WIDE)});
+   out.push(s)}
+  return out};
+
+ let total=0;
+ const rest=()=>{strokes=demoStrokes();redraw();mode='draw';sync()};
+
+ /* ---- the loop ---- */
+ const finish=()=>{P=null;img=null;buf=null;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  strokes=[];mode='draw';armed=false;root.classList.remove('armed');sync();
+  /* It writes itself back on rather than sitting empty in the gallery — but
+     under reduced motion that is just another animation, so restore it flat. */
+  /* Reduced motion still gets the clear and still gets the tile back — it
+     just does not get the writing hand. */
+  if(reduced.matches){setTimeout(()=>{if(mode==='draw'&&!inked())rest()},1200);return}
+  hold=performance.now()+700;mode='wait';
+  if(!raf)raf=requestAnimationFrame(run)};
+
+ const run=now=>{
+  if(mode==='wait'){
+   if(now>=hold){strokes=demoStrokes();total=strokes.reduce((n,s)=>n+s.pts.length,0);
+    mode='write';t0=now}
+   raf=requestAnimationFrame(run);return}
+  const dur=mode==='write'?1100:DUR[EFFECTS[effect]];
+  if(!t0)t0=now;
+  const t=Math.min((now-t0)/dur,1);
+  if(mode==='rewind')redraw(Math.round(total*(1-t)));
+  else if(mode==='write')redraw(Math.round(total*t));
+  else{const dt=Math.min((now-(last||now))/1000,1/30);last=now;advance(dt,t);paint()}
+  if(t<1){raf=requestAnimationFrame(run);return}
+  raf=0;
+  if(mode==='write'){mode='draw';redraw();sync()}
+  else finish()};
+
+ const start=()=>{if(!inked()||mode!=='draw')return;
+  if(reduced.matches){finish();return}
+  if(EFFECTS[effect]==='Rewind'){total=strokes.reduce((n,s)=>n+s.pts.length,0);mode='rewind'}
+  else{if(!explode()){finish();return}mode='dissolve'}
+  t0=0;last=0;sync();cancelAnimationFrame(raf);raf=requestAnimationFrame(run)};
+
+ /* ---- input ---- */
+ const at=e=>{const r=canvas.getBoundingClientRect();
+  return{x:e.clientX-r.left,y:e.clientY-r.top,t:performance.now()}};
+
+ /* A touch has to arm the pad first, and only a TAP arms it — a drag that
+    started here was someone scrolling the gallery, and arming on that would
+    just move the fight to their next swipe. */
+ let tapAt=null;
+ canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'&&!armed){tapAt={x:e.clientX,y:e.clientY,t:performance.now()};return}
+  if(mode==='write'){cancelAnimationFrame(raf);raf=0;mode='draw';redraw()}
+  if(mode!=='draw')return;
+  canvas.setPointerCapture(e.pointerId);
+  cur={pts:[at(e)],w:[WIDE]};strokes.push(cur);redraw();sync()});
+ canvas.addEventListener('pointermove',e=>{if(!cur)return;
+  const p=at(e),l=cur.pts[cur.pts.length-1];
+  if(Math.hypot(p.x-l.x,p.y-l.y)<1.1)return;
+  const prev=cur.w[cur.w.length-1];
+  cur.pts.push(p);cur.w.push(prev+(widthFor(l,p)-prev)*.4);redraw()});
+ const end=e=>{
+  if(tapAt){const moved=Math.hypot(e.clientX-tapAt.x,e.clientY-tapAt.y);
+   if(e.type==='pointerup'&&moved<9&&performance.now()-tapAt.t<600){
+    armed=true;root.classList.add('armed')}
+   tapAt=null}
+  if(cur){cur=null;sync()}};
+ canvas.addEventListener('pointerup',end);
+ canvas.addEventListener('pointercancel',end);
+ clearBtn.addEventListener('click',start);
+ cycleBtn.addEventListener('click',()=>{effect=(effect+1)%EFFECTS.length;
+  nameEl.textContent=EFFECTS[effect]});
+
+ new ResizeObserver(()=>{if(size()&&mode==='draw')redraw()}).observe(canvas);
+ new IntersectionObserver(e=>{inView=e[0].isIntersecting;
+  if(!inView&&!armed)return;
+  if(!inView){armed=false;root.classList.remove('armed')}}).observe(root);
+ reduced.addEventListener('change',()=>{if(reduced.matches&&mode!=='draw'){
+  cancelAnimationFrame(raf);raf=0;rest()}});
+
+ if(size())rest();
+ return{get strokes(){return strokes.length},get effect(){return EFFECTS[effect]}}}
+
+const sigCard=document.querySelector('#signature-demo');
+if(sigCard){const sigHTML=sigCard.outerHTML;
+ wireSignature(sigCard);
+ Object.assign(prototypes,{signature:{title:'Signature',html:sigHTML,
+  css:'*{box-sizing:border-box}body{background:#f4f7fa;margin:0;display:grid;'
+   +'place-items:center;min-height:100vh;font-family:Nunito,Arial,sans-serif}'
+   +cssFor(/^\.sig/)
+   +'.sig-pad{width:min(430px,92vw);height:270px}',
+  js:'/* Signature. The pad keeps the points your hand actually made, so clearing\n'
+   +'   can be a physical event rather than a wipe: the finished ink is read back\n'
+   +'   with getImageData and every inked device pixel becomes one speck, written\n'
+   +'   straight into an ImageData buffer — at this count nothing shaped is cheap\n'
+   +'   enough. Rewind is the exception and the point of the piece: it walks back\n'
+   +'   along the recorded path, which only a pad that stores stroke order can do.\n'
+   +'   Technique after a signature-pad dissolve supplied by the site owner,\n'
+   +'   reimplemented in vanilla. */\n'
+   +wireSignature.toString()+";wireSignature(document.querySelector('.sig-pad'));"}});
+}
