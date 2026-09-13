@@ -2160,7 +2160,15 @@ if(voxCard){const voxHTML=voxCard.outerHTML;
    what makes it easy to ship. */
 function wireLetterfall(root){const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const canvas=root.querySelector('.lf-canvas'),ctx=canvas.getContext('2d');
- const WORD='BEAR',STEP=7,DOT=3.5,PUSH=120,SPRING=10,DAMP=3.4,LAUNCH=900;
+ const WORD='BEAR',PUSH=120,SPRING=10,DAMP=3.4,LAUNCH=900;
+ /* The grid and the dot scale WITH the type, not in fixed pixels. The card is
+    the same height at every width, but a narrow one shrinks the word to fit:
+    at 157px a stroke took 3.8 samples across, at 95px only 2.3, so the word
+    thinned out and the counters of B, A and R filled in. REF_STEP is the
+    spacing that looked right at REF_PX — written as a pair, not a decimal,
+    because px*REF_STEP/REF_PX lands on exactly REF_STEP at the reference size
+    and the wide card is unchanged to the pixel. */
+ const REF_PX=157,REF_STEP=7,DOT_R=.5;
  const INK=['#b77637','#d99a4e','#8fc5e8','#8fae86','#c2564a','#e9d9bd'];
  const hash=n=>{const x=Math.sin(n*12.9898)*43758.5453;return x-Math.floor(x)};
  let w=0,h=0,dpr=1,parts=[],pointer=null,raf=0,last=null,acc=0,inView=false,ready=false;
@@ -2180,11 +2188,13 @@ function wireLetterfall(root){const reduced=matchMedia('(prefers-reduced-motion:
   for(let i=0;i<24;i++){o.font='900 '+px+'px Nunito,Arial,sans-serif';
    if(o.measureText(WORD).width<=off.width*.84)break;px=Math.round(px*.92)}
   o.fillStyle='#fff';o.fillText(WORD,off.width/2,off.height/2);
+  const step=Math.max(3,px*REF_STEP/REF_PX),dot=step*DOT_R;
   const d=o.getImageData(0,0,off.width,off.height).data,out=[];
-  for(let y=0;y<off.height;y+=STEP)for(let x=0;x<off.width;x+=STEP){
-   if(d[(y*off.width+x)*4+3]>130){const n=out.length;
-    out.push({tx:x+(hash(n)-.5)*STEP*.9,ty:y+(hash(n+91)-.5)*STEP*.9,
-     r:DOT*(.55+hash(n+7)*.95),c:INK[(n*7+((x+y)|0))%INK.length],seed:n})}}
+  for(let y=0;y<off.height;y+=step)for(let x=0;x<off.width;x+=step){
+   const ix=x|0,iy=y|0;
+   if(d[(iy*off.width+ix)*4+3]>130){const n=out.length;
+    out.push({tx:x+(hash(n)-.5)*step*.9,ty:y+(hash(n+91)-.5)*step*.9,
+     r:dot*(.55+hash(n+7)*.95),c:INK[(n*7+((ix+iy)|0))%INK.length],seed:n})}}
   return out};
 
  const throwIn=()=>{parts=sample().map(s=>Object.assign({},s,{
