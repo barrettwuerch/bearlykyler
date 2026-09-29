@@ -1,15 +1,26 @@
 {
-  // Static-assets-only Worker: no server-side code, so there is no "main"
-  // entry point. Cloudflare Workers Builds runs `wrangler versions upload`
-  // against this file.
+  // Cloudflare serves the static site straight from site/. worker/index.js
+  // only runs for paths that are not a file there: it adds the Oware
+  // roadmap's password-protected API under /api/roadmap/ and hands every
+  // other path back to the static assets.
   //
   // "name" must match the existing Worker in the Cloudflare dashboard,
   // otherwise a deploy targets a different Worker.
   "name": "bearlykyler",
+  "main": "./worker/index.js",
   "compatibility_date": "2026-09-10",
   "assets": {
-    // The web root is site/, not the repository root. GUIDE.md, source/ and
-    // serve.py are documentation and tooling; they are never served.
-    "directory": "./site"
-  }
+    // The web root is site/, not the repository root. GUIDE.md, source/,
+    // serve.py and worker/ are documentation, tooling and server code; they
+    // are never served.
+    "directory": "./site",
+    "binding": "ASSETS"
+  },
+  // The roadmap board lives in one SQLite-backed Durable Object. The
+  // migration creates its class on the first deploy; never edit or remove
+  // an applied migration.
+  "durable_objects": {
+    "bindings": [{ "name": "ROADMAP", "class_name": "RoadmapBoard" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoadmapBoard"] }]
 }

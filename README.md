@@ -15,14 +15,31 @@ technical and editing manual.
 Python 3 is the only requirement for this local server. The site itself needs
 no Python, Node, React, database, API keys, or build step.
 
+The Oware roadmap at `/oware-roadmap/` also needs its API, which `serve.py`
+does not run. To try it locally, run `npx wrangler dev` from the repository
+root and open http://localhost:8787/oware-roadmap/ instead.
+
 ## Deployment
 
-The site is a static-assets-only Cloudflare Worker. Cloudflare builds from the
-`main` branch, so a push to `main` publishes. There is no build step.
+The site is a Cloudflare Worker. Cloudflare serves every file in `site/`
+directly; `worker/index.js` only runs for other paths, where it adds the Oware
+roadmap's API under `/api/roadmap/` and hands everything else back to the
+static files. Cloudflare builds from the `main` branch, so a push to `main`
+publishes. There is no build step.
 
 **The web root is `site/`, not the repository root.** `index.html` lives at
-`site/index.html`; `GUIDE.md`, `source/` and `serve.py` are documentation and
-tooling and are never served.
+`site/index.html`; `GUIDE.md`, `source/`, `serve.py` and `worker/` are
+documentation, tooling and server code and are never served.
+
+The roadmap's data lives in a Durable Object, not in this repository. Creating
+it needs `wrangler deploy` (Cloudflare's default for the production branch);
+`wrangler versions upload`, used for preview branches, cannot create it, so a
+preview build fails until the first production deploy has run.
+
+The roadmap is behind a team password, checked in `worker/index.js` against a
+SHA-256 hash. To change the password without editing code, add a
+`ROADMAP_PASSWORD` secret to the Worker in the Cloudflare dashboard; it replaces
+the built-in one and keeps the saved board.
 
 `wrangler.jsonc` holds the deploy configuration. Its `name` must keep matching
 the Worker in the Cloudflare dashboard, or a deploy will target a different
@@ -45,6 +62,8 @@ npx wrangler deploy --dry-run
 ## Folder overview
 
 - `site/`: the deployable website, including editable implementation.
+- `site/oware-roadmap/`: the Oware product roadmap page.
+- `worker/`: the Worker code, including the roadmap's password check and API.
 - `source/`: historical canvas loader implementation and wave timeline.
 - `GUIDE.md`: detailed implementation, maintenance and launch instructions.
 - `serve.py`: local HTTP server, bound to your own machine.
