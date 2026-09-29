@@ -1,0 +1,2227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oware Roadmap</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42.39 41.89'%3E%3Cg fill='%2317181C'%3E%3Ccircle cx='20.6' cy='4.3' r='4.3'/%3E%3Ccircle cx='8.6' cy='11.44' r='4.3'/%3E%3Ccircle cx='4.3' cy='25.59' r='4.3'/%3E%3Ccircle cx='13.03' cy='37.59' r='4.3'/%3E%3Ccircle cx='28.92' cy='37.59' r='4.3'/%3E%3Ccircle cx='38.09' cy='25.59' r='4.3'/%3E%3C/g%3E%3Crect x='28.55' y='6.86' width='9.17' height='9.17' transform='translate(48.48 42.97) rotate(-135)' fill='%2300B7FF'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root {
+    /* Layout: the Oware brand mosaic. Flat tiles on a warm ground with 22px seams.
+       Priority shows as loudness: Now is the anchor-blue tile, each tier after it
+       gets quieter, and shipped work settles into the night panel. */
+    --ground: #E9E6DF;
+    --field: #FFFFFF;
+    --band: #F6F6F4;
+    --ink: #17181C;
+    --ink-2: rgba(23, 24, 28, 0.76);
+    --ink-3: rgba(23, 24, 28, 0.62);
+    --rule: rgba(23, 24, 28, 0.13);
+    --rule-strong: rgba(23, 24, 28, 0.3);
+    --accent-type: #0090D4;
+    --accent-text: #0074AD;
+    --act: #0074AD;
+    --act-hover: #00619A;
+    --on-act: #FFFFFF;
+    --on-act-2: rgba(255, 255, 255, 0.92);
+    --on-act-rule: rgba(255, 255, 255, 0.45);
+    --brand: #00B7FF;
+    --panel: #0A0A0A;
+    --panel-edge: rgba(244, 241, 234, 0);
+    --paper: #F4F1EA;
+    --signal: #F2C13B;
+    --quiet: #3ECD80;
+    --error: #B42318;
+    --lift: 0 34px 70px -40px rgba(0, 28, 48, 0.62);
+    --pop: 0 26px 60px -28px rgba(10, 15, 26, 0.5);
+    --grotesk: "Space Grotesk", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --seam: 22px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #05070A;
+      --field: #10151D;
+      --band: #0C1016;
+      --ink: #F4F1EA;
+      --ink-2: rgba(244, 241, 234, 0.78);
+      --ink-3: rgba(244, 241, 234, 0.58);
+      --rule: rgba(244, 241, 234, 0.12);
+      --rule-strong: rgba(244, 241, 234, 0.28);
+      --accent-type: #33C4FF;
+      --accent-text: #5CD0FF;
+      --act-hover: #007DBA;
+      --error: #FF8A7A;
+      --panel: #000000;
+      --panel-edge: rgba(244, 241, 234, 0.12);
+      --lift: 0 34px 70px -40px rgba(0, 0, 0, 0.9);
+      --pop: 0 26px 60px -24px rgba(0, 0, 0, 0.85);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #05070A;
+    --field: #10151D;
+    --band: #0C1016;
+    --ink: #F4F1EA;
+    --ink-2: rgba(244, 241, 234, 0.78);
+    --ink-3: rgba(244, 241, 234, 0.58);
+    --rule: rgba(244, 241, 234, 0.12);
+    --rule-strong: rgba(244, 241, 234, 0.28);
+    --accent-type: #33C4FF;
+    --accent-text: #5CD0FF;
+    --act-hover: #007DBA;
+    --error: #FF8A7A;
+    --panel: #000000;
+    --panel-edge: rgba(244, 241, 234, 0.12);
+    --lift: 0 34px 70px -40px rgba(0, 0, 0, 0.9);
+    --pop: 0 26px 60px -24px rgba(0, 0, 0, 0.85);
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 14px/1.5 var(--ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; }
+  :where(a, button, input, textarea):focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+  .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* The night panel keeps its own light-on-dark tokens in both themes. */
+  .on-panel {
+    --ink: #F4F1EA;
+    --ink-2: rgba(244, 241, 234, 0.78);
+    --ink-3: rgba(244, 241, 234, 0.58);
+    --rule: rgba(244, 241, 234, 0.14);
+    --rule-strong: rgba(244, 241, 234, 0.3);
+    --field: #0A0A0A;
+    --accent-text: #5CD0FF;
+    background: var(--panel);
+    color: var(--ink);
+  }
+
+  .page {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding-inline: var(--seam);
+    padding-block: var(--seam) 30px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--seam);
+  }
+  section[id] { scroll-margin-top: 16px; }
+  .tile { position: relative; min-width: 0; overflow: hidden; }
+  .label {
+    margin: 0;
+    font: 500 10.5px/1.35 var(--mono);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* ---------- password gate ---------- */
+  .gate { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+  .gate-card {
+    width: min(440px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 34px 36px 30px;
+    background: var(--field);
+    box-shadow: var(--lift);
+  }
+  .gate-card .eyebrow { margin: 34px 0 0; }
+  .gate-title { margin: 0; font: 700 clamp(32px, 6vw, 42px)/1 var(--grotesk); letter-spacing: -0.015em; text-transform: uppercase; }
+  .gate-title em { font-style: normal; color: var(--accent-type); }
+  .gate-lede { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+  .gate-row { display: flex; flex-direction: column; gap: 10px; }
+  .gate-error { margin: 0; min-height: 1.45em; font-size: 13.5px; color: var(--error); }
+  @media (max-width: 560px) {
+    .gate-card { padding: 26px 22px 24px; }
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--seam); }
+  .hero { background: var(--field); padding: 34px 44px 40px; display: flex; flex-direction: column; }
+  .brandbar { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 24px; height: 24px; flex: none; color: var(--ink); }
+  .wordmark { font: 500 11px/1 var(--mono); letter-spacing: 0.32em; }
+  .jump { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 22px; }
+  .jump a { padding: 6px 0; font-size: 12.5px; color: var(--ink-2); text-decoration: none; }
+  .jump a:hover { color: var(--accent-text); }
+  .eyebrow {
+    margin: 56px 0 0;
+    font: 500 11px/1.4 var(--mono);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+  }
+  .headline {
+    margin: 16px 0 0;
+    font: 700 clamp(36px, 4.4vw, 60px)/1.02 var(--grotesk);
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .headline span { display: block; }
+  .headline em { font-style: normal; color: var(--accent-type); }
+  .lede { margin: 20px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.55; color: var(--ink-2); }
+  .access-note { margin: 30px 0 0; padding: 14px 16px; background: var(--band); font-size: 14px; color: var(--ink-2); }
+
+  /* composer */
+  .composer { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 16px; }
+  .composer-main { display: flex; flex-wrap: wrap; gap: 10px; }
+  .composer-main .input { flex: 1 1 280px; }
+  .composer-opts { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 28px; }
+  .field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .input {
+    min-width: 0;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--field);
+    color: var(--ink);
+    font: 400 15px/1.2 var(--ui);
+  }
+  .input::placeholder { color: var(--ink-3); opacity: 1; }
+  .input:focus-visible { outline-offset: -1px; }
+  .textarea { height: auto; min-height: 84px; padding: 11px 14px; line-height: 1.5; resize: vertical; }
+  .owner-input { width: 220px; height: 40px; font-size: 14px; }
+  .btn-act {
+    height: 46px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 2px;
+    background: var(--act);
+    color: var(--on-act);
+    font: 600 13.5px/1 var(--ui);
+    white-space: nowrap;
+  }
+  .btn-act:hover { background: var(--act-hover); }
+  .btn-act:disabled { opacity: 0.55; background: var(--act); }
+  .btn-ghost {
+    height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--ink);
+    font: 500 13.5px/1 var(--ui);
+  }
+  .btn-ghost:hover { border-color: var(--ink); }
+  .btn-sm { height: 38px; padding: 0 14px; }
+  .btn-quiet {
+    height: 42px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--ink-2);
+    font: 500 13.5px/1 var(--ui);
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-underline-offset: 4px;
+  }
+  .btn-quiet:hover { color: var(--ink); text-decoration-color: currentColor; }
+  .link-btn {
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: 500 10.5px/1 var(--mono);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+  }
+
+  /* segmented choice (radio group) */
+  .seg { display: inline-grid; grid-auto-flow: column; border: 1px solid var(--rule-strong); border-radius: 2px; }
+  .seg label { position: relative; display: block; }
+  .seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .seg span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 14px;
+    border-left: 1px solid var(--rule);
+    font: 500 13px/1 var(--ui);
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .seg label:first-child span { border-left: 0; }
+  .seg small { font: 400 9.5px/1 var(--mono); letter-spacing: 0.06em; color: var(--ink-3); }
+  .seg label:hover input:not(:checked) + span { color: var(--ink); background: var(--band); }
+  .seg input:checked + span { background: var(--ink); color: var(--field); }
+  .seg input:checked + span small { color: inherit; opacity: 0.62; }
+  .seg input:focus-visible + span { position: relative; z-index: 1; outline: 2px solid var(--accent-text); outline-offset: 2px; }
+  .seg-5 { --n: 5; }
+  .seg-3 { --n: 3; }
+
+  /* ---------- scan panel (the brand's night scan, reading the board) ---------- */
+  .scan-tile { background: var(--band); display: flex; align-items: center; justify-content: center; padding: 36px 28px; }
+  .scan {
+    width: 100%;
+    max-width: 380px;
+    padding: 20px 22px 22px;
+    font-family: var(--mono);
+    box-shadow: var(--lift), inset 0 0 0 1px var(--panel-edge);
+  }
+  .scan-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid var(--rule); }
+  .scan-hd b { font-size: 10.5px; font-weight: 500; letter-spacing: 0.22em; color: var(--ink-3); }
+  .scan-hd i { font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: var(--signal); text-align: right; }
+  .scan-mets { display: flex; flex-wrap: wrap; gap: 12px 26px; padding: 15px 0 14px; }
+  .scan .m span { display: block; font-size: 9.5px; letter-spacing: 0.16em; color: var(--ink-3); }
+  .scan .m b { font-size: 23px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .is-quiet { color: var(--quiet); }
+  .is-signal { color: var(--signal); }
+  .scan-bars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; height: 96px; }
+  .bar { display: flex; flex-direction: column; justify-content: flex-end; gap: 5px; min-width: 0; }
+  .bar-n { font-size: 10.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; min-height: 1.2em; }
+  .bar-fill {
+    height: calc(var(--v, 0) * 52px);
+    background: rgba(244, 241, 234, 0.3);
+    transition: height 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .bar.is-now .bar-fill { background: var(--brand); }
+  .bar-l { padding-top: 6px; border-top: 1px solid var(--rule-strong); font-size: 8.5px; letter-spacing: 0.1em; color: var(--ink-3); }
+  .scan-apex {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 9px 11px;
+    border: 1px solid var(--rule-strong);
+    background: transparent;
+    color: var(--ink);
+    font: 400 11px/1.35 var(--mono);
+    text-align: left;
+  }
+  .scan-apex.is-flag { border-color: var(--signal); }
+  .scan-apex.is-clear { border-color: var(--quiet); }
+  .scan-apex:not(:disabled):hover { background: rgba(242, 193, 59, 0.08); }
+  .apex-k { min-width: 0; overflow-wrap: anywhere; text-transform: uppercase; }
+  .apex-v { flex: none; letter-spacing: 0.06em; color: var(--ink-3); }
+  .is-flag .apex-v { color: var(--signal); }
+  .is-clear .apex-v { color: var(--quiet); }
+
+  /* ---------- team ---------- */
+  .team {
+    background: var(--band);
+    display: grid;
+    grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+    gap: 18px 44px;
+    align-items: start;
+    padding: 28px 40px 30px;
+  }
+  .team-head { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+  .team-name { margin: 0; font: 700 28px/0.92 var(--grotesk); letter-spacing: -0.02em; text-transform: uppercase; }
+  .team-status { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+  .team-status .link-btn { margin-left: 6px; }
+  .member-add { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
+  .member-form { display: flex; gap: 8px; width: 100%; }
+  .member-form .input { flex: 1; height: 38px; font-size: 14px; }
+  .members {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px 18px;
+  }
+  .member { display: flex; align-items: center; gap: 2px; min-width: 0; }
+  .member-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 8px 10px 8px 8px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--ink);
+    text-align: left;
+  }
+  .member-btn:hover { background: var(--rule); }
+  .member-btn[aria-pressed="true"] { background: var(--ink); color: var(--field); }
+  .member-btn[aria-pressed="true"] .avatar { background: var(--field); color: var(--ink); }
+  .member-btn[aria-pressed="true"] .member-load { color: inherit; opacity: 0.72; }
+  .member-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .member-name { font: 700 18px/1.1 var(--grotesk); letter-spacing: -0.01em; overflow-wrap: break-word; }
+  .member-load { font: 400 10px/1.3 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+  .member-x {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--ink-3);
+    font: 400 18px/1 var(--ui);
+    opacity: 0;
+  }
+  .member:hover .member-x, .member-x:focus-visible { opacity: 1; }
+  .member-x:hover { color: var(--ink); background: var(--rule); }
+  @media (hover: none) { .member-x { opacity: 1; } }
+  .member-empty { padding: 10px 0; font-size: 14px; color: var(--ink-3); }
+
+  /* ---------- tiers ---------- */
+  .tier { display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: 28px 44px; padding: 36px 40px 40px; }
+  .tier-head { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .tier-name {
+    margin: 0;
+    font: 700 32px/0.92 var(--grotesk);
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  .tier-desc { margin: 0; max-width: 30ch; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+  .tier-count { margin-top: auto; padding-top: 8px; }
+  .tier-body { min-width: 0; }
+
+  .tier-0 { background: var(--act); color: var(--on-act); }
+  .tier-0 .tier-name { font-size: clamp(56px, 6vw, 88px); }
+  .tier-0 .tier-desc, .tier-0 .tier-count { color: var(--on-act-2); }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--seam); }
+  .tier.is-list { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .tier.is-list .tier-count { margin-top: 0; padding-top: 0; }
+  .tier-1 { background: var(--field); }
+  .tier-1 .tier-name { font-size: clamp(40px, 3.6vw, 52px); }
+  .tier-2 { background: var(--band); }
+  .tier-2 .tier-name { font-size: clamp(32px, 2.8vw, 40px); }
+  .tier-3 { background: var(--band); }
+  .tier-4 { background: var(--field); }
+  .tier-3 .tier-name, .tier-4 .tier-name { font-size: 28px; }
+
+  /* cards: the Now tier */
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    align-content: start;
+  }
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 208px;
+    padding: 18px 20px 14px;
+    border-radius: 2px;
+    background: var(--field);
+    color: var(--ink);
+    box-shadow: var(--lift);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .card[data-openable] { cursor: pointer; }
+  .card[data-openable]:hover { transform: translateY(-2px); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 16px; }
+  .rank { font: 500 11px/1 var(--mono); letter-spacing: 0.16em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .tier-0 .rank { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); }
+  .tier-0 .rank::before { content: ""; width: 7px; height: 7px; background: var(--brand); transform: rotate(45deg); }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font: 500 10px/1.2 var(--mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+  }
+  .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.3; } }
+  .card-title {
+    margin: 0;
+    font: 700 clamp(21px, 1.7vw, 26px)/1.04 var(--grotesk);
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  .card-note { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+  .card-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  /* owner chip */
+  .owner {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin-left: -5px;
+    padding: 4px 10px 4px 5px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--ink);
+    font: 500 13px/1.25 var(--ui);
+    text-align: left;
+  }
+  button.owner:hover { background: var(--rule); }
+  .owner-name { min-width: 0; overflow-wrap: anywhere; }
+  .owner.is-empty .owner-name { color: var(--ink-3); }
+  .avatar {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--field);
+    font: 500 9.5px/1 var(--mono);
+    letter-spacing: 0.04em;
+  }
+  .avatar-lg { width: 36px; height: 36px; font-size: 12px; }
+  .avatar-empty { background: transparent; border: 1.5px dashed var(--rule-strong); color: var(--ink-3); }
+  button .avatar-empty::after, .opt .avatar-empty::after { content: "+"; font: 400 14px/1 var(--ui); }
+  .edit-btn {
+    flex: none;
+    padding: 8px 0 8px 8px;
+    border: 0;
+    background: none;
+    font: 500 10px/1 var(--mono);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .edit-btn:hover { color: var(--accent-text); }
+
+  /* rows: Next, Soon, Later, Someday, Shipped */
+  .rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .row-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto auto;
+    grid-template-areas: "rank main owner edit";
+    align-items: center;
+    gap: 8px 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--rule);
+    transition: opacity 0.18s ease;
+  }
+  .row-item[data-openable] { cursor: pointer; }
+  .row-item > .rank, .row-item > .check { grid-area: rank; align-self: start; padding-top: 4px; }
+  .row-main { grid-area: main; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .row-item > .owner { grid-area: owner; }
+  .row-item > .edit-btn { grid-area: edit; }
+  .row-title { font: 500 15px/1.35 var(--ui); overflow-wrap: anywhere; }
+  .row-item[data-openable]:hover .row-title { text-decoration: underline; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+  .tier-1 .row-title { font: 700 17px/1.15 var(--grotesk); letter-spacing: -0.01em; text-transform: uppercase; }
+  .tier-2 .row-title { font: 700 16.5px/1.25 var(--grotesk); letter-spacing: -0.01em; }
+  .tier-4 .row-title { font-weight: 400; color: var(--ink-2); }
+  .row-note { font-size: 13px; line-height: 1.45; color: var(--ink-3); white-space: pre-line; overflow-wrap: anywhere; }
+  .row-meta { font: 400 10.5px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); overflow-wrap: anywhere; }
+  .row-item.is-shipped { grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "rank main edit"; }
+  .check { font: 500 14px/1 var(--mono); color: var(--quiet); }
+  .is-dim { opacity: 0.25; }
+
+  /* empty and loading states */
+  .tier-empty { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 0; padding: 18px 0; font-size: 14px; color: var(--ink-3); }
+  .tier-empty p { margin: 0; }
+  .tier-empty.is-slot { min-height: 208px; align-content: center; padding: 20px 22px; border: 1px dashed var(--on-act-rule); }
+  .tier-0 .tier-empty { color: var(--on-act-2); }
+  .tier-0 .link-btn { color: var(--on-act); }
+  .tier-0 .link-btn:focus-visible { outline-color: var(--on-act); }
+
+  /* shipped */
+  .shipped {
+    display: grid;
+    grid-template-columns: minmax(190px, 260px) minmax(0, 1fr);
+    gap: 28px 44px;
+    padding: 36px 40px 40px;
+    box-shadow: inset 0 0 0 1px var(--panel-edge);
+  }
+  .shipped .tier-name { font-size: 32px; }
+  .shipped .tier-name .check { font-size: 0.7em; margin-left: 10px; vertical-align: 0.12em; }
+
+  /* drag and drop */
+  [data-drop].is-drop { outline: 2px dashed var(--accent-text); outline-offset: -10px; }
+  .tier-0[data-drop].is-drop { outline-color: var(--on-act); }
+  .is-dragging { opacity: 0.4; }
+  .card.drop-before::before, .card.drop-after::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--brand);
+  }
+  .card.drop-before::before { left: -10px; }
+  .card.drop-after::after { right: -10px; }
+  .tier-0 .card.drop-before::before, .tier-0 .card.drop-after::after { background: var(--on-act); }
+  .row-item.drop-before { box-shadow: inset 0 3px 0 var(--brand); }
+  .row-item.drop-after { box-shadow: inset 0 -3px 0 var(--brand); }
+  .is-fresh { animation: arrive 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); }
+  @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* footer */
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 24px;
+    padding: 6px 4px 8px;
+    font: 400 10px/1.5 var(--mono);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .foot-brand { display: inline-flex; align-items: center; gap: 10px; }
+  .foot-brand .mark { width: 14px; height: 14px; }
+  .keys { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+  /* owner picker */
+  .owner-pop {
+    position: absolute;
+    z-index: 40;
+    width: min(300px, calc(100vw - 32px));
+    padding: 10px;
+    border: 1px solid var(--rule-strong);
+    border-radius: 2px;
+    background: var(--field);
+    color: var(--ink);
+    box-shadow: var(--pop);
+  }
+  .owner-pop .label { display: block; margin: 2px 2px 8px; }
+  .owner-pop .input { width: 100%; height: 40px; font-size: 14px; }
+  .opts { display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow: auto; margin-top: 8px; }
+  .opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--ink);
+    font: 400 14px/1.3 var(--ui);
+    text-align: left;
+  }
+  .opt:hover, .opt.is-active { background: var(--band); }
+  .opt:focus-visible { outline-offset: -2px; background: var(--band); }
+  .opt-name { min-width: 0; overflow-wrap: anywhere; }
+  .opt-load {
+    margin-left: auto;
+    padding-left: 12px;
+    font: 400 10px/1 var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .opt[aria-current="true"]::after { content: "\2713"; margin-left: 10px; color: var(--accent-text); }
+  .opt-clear { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule); border-radius: 0; color: var(--ink-2); }
+  .opt-hint { margin: 4px 8px 6px; font-size: 13px; color: var(--ink-3); }
+
+  /* edit sheet */
+  .sheet {
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: var(--field);
+    color: var(--ink);
+    box-shadow: var(--pop);
+    overflow: auto;
+  }
+  .sheet::backdrop { background: rgba(8, 12, 20, 0.55); }
+  .sheet-body { display: flex; flex-direction: column; gap: 18px; padding: 24px 28px 26px; }
+  .sheet-hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    margin: -8px -10px -8px 0;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--ink-2);
+    font: 400 24px/1 var(--ui);
+  }
+  .icon-btn:hover { color: var(--ink); background: var(--band); }
+  .sheet .input { width: 100%; }
+  .sheet .seg { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+  .sheet .seg span { padding: 0 6px; }
+  .field-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; align-items: end; }
+  .sheet-ft { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; padding-top: 18px; border-top: 1px solid var(--rule); }
+  .sheet-ft .spacer { flex: 1; }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    padding: 12px 18px;
+    box-shadow: var(--pop), inset 0 0 0 1px var(--panel-edge);
+    font: 400 13.5px/1.4 var(--ui);
+    opacity: 0;
+    transform: translate(-50%, 10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+  .toast button {
+    flex: none;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: 500 10.5px/1 var(--mono);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--signal);
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1080px) {
+    .masthead { grid-template-columns: minmax(0, 1fr); }
+    .scan-tile { padding: 30px 22px; }
+  }
+  @media (max-width: 860px) {
+    .tier, .shipped, .team { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 28px 24px 30px; }
+    .tier-count { margin-top: 0; padding-top: 0; }
+    .pair { grid-template-columns: minmax(0, 1fr); }
+    .jump { display: none; }
+  }
+  @media (max-width: 720px) {
+    :root { --seam: 16px; }
+    .hero { padding: 26px 22px 30px; }
+    .eyebrow { margin-top: 38px; }
+    .tier, .shipped, .team { padding: 24px 20px 26px; }
+    .scan-tile { padding: 22px 16px; }
+  }
+  @media (max-width: 560px) {
+    .seg { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); width: 100%; }
+    .seg span, .sheet .seg span { flex-direction: column; gap: 4px; height: 50px; padding: 0 2px; font-size: 12.5px; }
+    .composer-opts .field, .owner-input { width: 100%; }
+    .composer-main .btn-act { flex: 1 1 100%; }
+    .field-row { grid-template-columns: minmax(0, 1fr); }
+    .sheet-body { padding: 20px 18px 22px; }
+    .members { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  }
+  @media (max-width: 520px) {
+    .row-item { grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "rank main edit" "rank owner edit"; }
+    .row-item > .owner { justify-self: start; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="oware-mark" viewBox="0 0 42.39 41.89">
+    <circle cx="20.6" cy="4.3" r="4.3" fill="currentColor"></circle>
+    <circle cx="8.6" cy="11.44" r="4.3" fill="currentColor"></circle>
+    <circle cx="4.3" cy="25.59" r="4.3" fill="currentColor"></circle>
+    <circle cx="13.03" cy="37.59" r="4.3" fill="currentColor"></circle>
+    <circle cx="28.92" cy="37.59" r="4.3" fill="currentColor"></circle>
+    <circle cx="38.09" cy="25.59" r="4.3" fill="currentColor"></circle>
+    <rect x="28.55" y="6.86" width="9.17" height="9.17" transform="translate(48.48 42.97) rotate(-135)" fill="#00B7FF"></rect>
+  </symbol>
+</svg>
+
+<section id="gate" class="gate" aria-labelledby="gate-title">
+  <form id="gate-form" class="gate-card" autocomplete="on" novalidate>
+    <div class="brandbar">
+      <svg class="mark" aria-hidden="true"><use href="#oware-mark"></use></svg>
+      <span class="wordmark">OWARE</span>
+    </div>
+    <p class="eyebrow">Product roadmap</p>
+    <h1 class="gate-title" id="gate-title">Team <em>access.</em></h1>
+    <p class="gate-lede">Enter the team password to open the roadmap.</p>
+    <label class="label" for="gate-password">Password</label>
+    <div class="gate-row">
+      <input id="gate-password" class="input" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <button id="gate-submit" class="btn-act" type="submit">Open roadmap</button>
+    </div>
+    <p id="gate-error" class="gate-error" role="alert"></p>
+  </form>
+</section>
+
+<div class="page" id="page" hidden>
+  <div class="masthead">
+    <section class="tile hero" aria-labelledby="page-title">
+      <div class="brandbar">
+        <svg class="mark" aria-hidden="true"><use href="#oware-mark"></use></svg>
+        <span class="wordmark">OWARE</span>
+        <nav class="jump" aria-label="Jump to a section">
+          <a href="#team">Team</a><a href="#now">Now</a><a href="#next">Next</a><a href="#soon">Soon</a><a href="#later">Later</a><a href="#someday">Someday</a><a href="#shipped">Shipped</a>
+        </nav>
+      </div>
+      <p class="eyebrow">Product roadmap &middot; Ranked by value</p>
+      <h1 class="headline" id="page-title"><span>What we build,</span><span>in order of <em>value.</em></span></h1>
+      <p class="lede">Every item is ranked by the value it produces. Now gets the team's hours. Everything else stays quiet until it moves up.</p>
+
+      <form id="composer" class="composer" autocomplete="off" novalidate>
+        <label class="label" for="new-title">Add an item</label>
+        <div class="composer-main">
+          <input id="new-title" class="input" type="text" maxlength="120" placeholder="What should we build?">
+          <button id="new-submit" class="btn-act" type="submit" disabled>Add to roadmap</button>
+        </div>
+        <div class="composer-opts">
+          <div class="field">
+            <span class="label" id="new-priority-label">Priority</span>
+            <div class="seg seg-5" role="radiogroup" aria-labelledby="new-priority-label">
+              <label><input type="radio" name="new-priority" id="new-p0" value="0" checked><span>Now <small>P0</small></span></label>
+              <label><input type="radio" name="new-priority" id="new-p1" value="1"><span>Next <small>P1</small></span></label>
+              <label><input type="radio" name="new-priority" id="new-p2" value="2"><span>Soon <small>P2</small></span></label>
+              <label><input type="radio" name="new-priority" id="new-p3" value="3"><span>Later <small>P3</small></span></label>
+              <label><input type="radio" name="new-priority" id="new-p4" value="4"><span>Someday <small>P4</small></span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label" for="new-owner">Owner</label>
+            <input id="new-owner" class="input owner-input" type="text" maxlength="40" list="owner-list" placeholder="No owner yet">
+          </div>
+        </div>
+      </form>
+      <p id="access-note" class="access-note" hidden></p>
+    </section>
+
+    <section class="tile scan-tile" aria-label="Roadmap summary">
+      <div class="scan on-panel">
+        <div class="scan-hd"><b>ROADMAP SCAN</b><i id="scan-time">READING</i></div>
+        <div class="scan-mets">
+          <div class="m"><span>ON BOARD</span><b id="m-open">&ndash;</b></div>
+          <div class="m"><span>SHIPPED</span><b id="m-shipped" class="is-quiet">&ndash;</b></div>
+          <div class="m"><span>NO OWNER</span><b id="m-unowned" class="is-signal">&ndash;</b></div>
+        </div>
+        <div class="scan-bars" aria-label="Open items per tier">
+          <div class="bar is-now" data-bar="0"><span class="bar-n"></span><span class="bar-fill"></span><span class="bar-l">NOW</span></div>
+          <div class="bar" data-bar="1"><span class="bar-n"></span><span class="bar-fill"></span><span class="bar-l">NEXT</span></div>
+          <div class="bar" data-bar="2"><span class="bar-n"></span><span class="bar-fill"></span><span class="bar-l">SOON</span></div>
+          <div class="bar" data-bar="3"><span class="bar-n"></span><span class="bar-fill"></span><span class="bar-l">LATER</span></div>
+          <div class="bar" data-bar="4"><span class="bar-n"></span><span class="bar-fill"></span><span class="bar-l">SOMEDAY</span></div>
+        </div>
+        <button type="button" class="scan-apex" id="scan-apex" data-action="apex" disabled>
+          <span class="apex-k" id="apex-k">Reading the board</span>
+          <span class="apex-v" id="apex-v">&hellip;</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <section class="tile team" id="team" aria-labelledby="team-h">
+    <div class="team-head">
+      <h2 class="team-name" id="team-h">Team</h2>
+      <p class="team-status" id="team-status"></p>
+      <div id="member-add" class="member-add" hidden>
+        <button type="button" class="link-btn" id="member-add-open" data-action="member-add-open">+ Add teammate</button>
+        <form id="member-form" class="member-form" autocomplete="off" novalidate hidden>
+          <label class="sr-only" for="member-name">Teammate name</label>
+          <input id="member-name" class="input" type="text" maxlength="40" placeholder="Name">
+          <button type="submit" class="btn-ghost btn-sm">Add</button>
+        </form>
+      </div>
+    </div>
+    <ul class="members" id="members"></ul>
+  </section>
+
+  <section class="tile tier tier-0" id="now" data-drop="0" aria-labelledby="now-h">
+    <header class="tier-head">
+      <h2 class="tier-name" id="now-h">Now</h2>
+      <p class="tier-desc">Most value. Gets the team's hours today.</p>
+      <p class="label tier-count" data-count></p>
+    </header>
+    <div class="tier-body" data-items></div>
+  </section>
+
+  <div class="pair">
+    <section class="tile tier tier-1 is-list" id="next" data-drop="1" aria-labelledby="next-h">
+      <header class="tier-head">
+        <h2 class="tier-name" id="next-h">Next</h2>
+        <p class="tier-desc">Starts the moment a Now item ships.</p>
+        <p class="label tier-count" data-count></p>
+      </header>
+      <div class="tier-body" data-items></div>
+    </section>
+    <section class="tile tier tier-2 is-list" id="soon" data-drop="2" aria-labelledby="soon-h">
+      <header class="tier-head">
+        <h2 class="tier-name" id="soon-h">Soon</h2>
+        <p class="tier-desc">Valuable, and waiting for room on the board.</p>
+        <p class="label tier-count" data-count></p>
+      </header>
+      <div class="tier-body" data-items></div>
+    </section>
+  </div>
+
+  <div class="pair">
+    <section class="tile tier tier-3 is-list" id="later" data-drop="3" aria-labelledby="later-h">
+      <header class="tier-head">
+        <h2 class="tier-name" id="later-h">Later</h2>
+        <p class="tier-desc">Worth doing. Not this cycle.</p>
+        <p class="label tier-count" data-count></p>
+      </header>
+      <div class="tier-body" data-items></div>
+    </section>
+    <section class="tile tier tier-4 is-list" id="someday" data-drop="4" aria-labelledby="someday-h">
+      <header class="tier-head">
+        <h2 class="tier-name" id="someday-h">Someday</h2>
+        <p class="tier-desc">Parked. Revisit when priorities shift.</p>
+        <p class="label tier-count" data-count></p>
+      </header>
+      <div class="tier-body" data-items></div>
+    </section>
+  </div>
+
+  <section class="tile shipped on-panel" id="shipped" aria-labelledby="shipped-h">
+    <header class="tier-head">
+      <h2 class="tier-name" id="shipped-h">Shipped<span class="check" aria-hidden="true">&#10003;</span></h2>
+      <p class="tier-desc">Cleared from the board. Kept here for the record.</p>
+      <p class="label tier-count" data-count></p>
+    </header>
+    <div class="tier-body" data-items></div>
+  </section>
+
+  <footer class="foot">
+    <span class="foot-brand"><svg class="mark" aria-hidden="true"><use href="#oware-mark"></use></svg>Oware &middot; Product roadmap</span>
+    <span id="foot-hint" hidden>Drag items to rerank &middot; Click one to edit</span>
+    <span class="keys" aria-label="Priority key"><span>Now = P0</span><span>Next = P1</span><span>Soon = P2</span><span>Later = P3</span><span>Someday = P4</span></span>
+    <button type="button" class="link-btn" data-action="sign-out">Sign out</button>
+  </footer>
+</div>
+
+<datalist id="owner-list"></datalist>
+
+<div id="owner-pop" class="owner-pop" role="dialog" aria-labelledby="owner-pop-label" hidden>
+  <label class="label" id="owner-pop-label" for="owner-search">Owner</label>
+  <input id="owner-search" class="input" type="text" maxlength="40" placeholder="Type a name" autocomplete="off">
+  <div id="owner-options" class="opts"></div>
+</div>
+
+<dialog id="edit-dialog" class="sheet" aria-labelledby="edit-heading">
+  <form id="edit-form" class="sheet-body" novalidate>
+    <div class="sheet-hd">
+      <h2 class="label" id="edit-heading">Edit item</h2>
+      <button type="button" class="icon-btn" data-action="close" aria-label="Close">&times;</button>
+    </div>
+    <div class="field">
+      <label class="label" for="edit-title">Title</label>
+      <input id="edit-title" class="input" type="text" maxlength="120">
+    </div>
+    <div class="field">
+      <label class="label" for="edit-note">Note</label>
+      <textarea id="edit-note" class="input textarea" maxlength="280" rows="3" placeholder="Why it matters, or what done looks like"></textarea>
+    </div>
+    <div class="field">
+      <span class="label" id="edit-priority-label">Priority</span>
+      <div class="seg seg-5" role="radiogroup" aria-labelledby="edit-priority-label">
+        <label><input type="radio" name="edit-priority" id="edit-p0" value="0"><span>Now <small>P0</small></span></label>
+        <label><input type="radio" name="edit-priority" id="edit-p1" value="1"><span>Next <small>P1</small></span></label>
+        <label><input type="radio" name="edit-priority" id="edit-p2" value="2"><span>Soon <small>P2</small></span></label>
+        <label><input type="radio" name="edit-priority" id="edit-p3" value="3"><span>Later <small>P3</small></span></label>
+        <label><input type="radio" name="edit-priority" id="edit-p4" value="4"><span>Someday <small>P4</small></span></label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="label" for="edit-owner">Owner</label>
+        <input id="edit-owner" class="input" type="text" maxlength="40" list="owner-list" placeholder="No owner yet">
+      </div>
+      <div class="field">
+        <span class="label" id="edit-status-label">Status</span>
+        <div class="seg seg-3" role="radiogroup" aria-labelledby="edit-status-label">
+          <label><input type="radio" name="edit-status" id="edit-s-planned" value="planned"><span>Planned</span></label>
+          <label><input type="radio" name="edit-status" id="edit-s-active" value="active"><span>In progress</span></label>
+          <label><input type="radio" name="edit-status" id="edit-s-shipped" value="shipped"><span>Shipped</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-ft">
+      <button type="button" id="edit-delete" class="btn-quiet">Delete item</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn-ghost" data-action="close">Cancel</button>
+      <button type="submit" class="btn-act">Save changes</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast on-panel" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const API = "/api/roadmap";
+  const PASSWORD_KEY = "oware-roadmap-password";
+  const POLL_MS = 20000;
+
+  const TIERS = [
+    { key: "now", name: "Now", empty: "Nothing in Now. Move the highest-value item here." },
+    { key: "next", name: "Next", empty: "Nothing queued behind Now." },
+    { key: "soon", name: "Soon", empty: "Nothing waiting for room." },
+    { key: "later", name: "Later", empty: "Nothing here yet." },
+    { key: "someday", name: "Someday", empty: "No parked ideas." },
+  ];
+  const STATUSES = ["planned", "active", "shipped"];
+  const STEP = 1024;
+  const MAX_TITLE = 120;
+  const MAX_NOTE = 280;
+  const MAX_OWNER = 40;
+
+  const $ = (sel) => document.querySelector(sel);
+  const finePointer = window.matchMedia("(pointer: fine)").matches;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const state = { phase: "loading", items: [], team: [], teamReady: false, canWrite: true };
+  let db = null;
+  let unsubs = [];
+  let dragId = null;
+  let dropKey = "";
+  let renderPending = false;
+  let submitting = false;
+  let freshId = null;
+  let editingId = null;
+  let popId = null;
+  let focusOwner = "";
+  let toastTimer = 0;
+  let password = readPassword();
+
+  const gate = $("#gate");
+  const page = $("#page");
+  const gateForm = $("#gate-form");
+  const gateInput = $("#gate-password");
+  const gateSubmit = $("#gate-submit");
+  const gateError = $("#gate-error");
+  const dlg = $("#edit-dialog");
+  const pop = $("#owner-pop");
+  const popInput = $("#owner-search");
+  const popList = $("#owner-options");
+  const memberForm = $("#member-form");
+  const memberInput = $("#member-name");
+  const memberOpen = $("#member-add-open");
+
+  /* ---------- helpers ---------- */
+  const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ESC[c]);
+  const str = (v) => (typeof v === "string" ? v : "");
+  const lower = (v) => str(v).toLowerCase();
+  const pad = (n) => (n < 10 ? "0" + n : String(n));
+  const clean = (v, max) => str(v).replace(/\s+/g, " ").trim().slice(0, max);
+  const cleanNote = (v) => str(v).replace(/\r\n?/g, "\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, MAX_NOTE);
+  const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const byKey = (k) => document.querySelector('[data-key="' + CSS.escape(k) + '"]');
+  const find = (id) => state.items.find((i) => i.id === id);
+  const canEdit = () => !!db && state.phase === "ready" && state.canWrite !== false;
+  const scrollOpts = { block: "center", behavior: reduceMotion ? "auto" : "smooth" };
+
+  function readPassword() {
+    try {
+      return localStorage.getItem(PASSWORD_KEY) || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function savePassword(value) {
+    try {
+      if (value) localStorage.setItem(PASSWORD_KEY, value);
+      else localStorage.removeItem(PASSWORD_KEY);
+    } catch (_) {
+      /* private browsing: the page stays open for this visit only */
+    }
+  }
+
+  function normalize(doc) {
+    const d = doc.data() || {};
+    const p = typeof d.priority === "number" ? d.priority : Number.NaN;
+    return {
+      id: doc.id,
+      title: clean(d.title, MAX_TITLE) || "Untitled",
+      note: cleanNote(d.note),
+      priority: Number.isInteger(p) && p >= 0 && p <= 4 ? p : 4,
+      owner: clean(d.owner, MAX_OWNER),
+      status: STATUSES.includes(d.status) ? d.status : "planned",
+      rank: num(d.rank),
+      createdAt: num(d.createdAt),
+      updatedAt: num(d.updatedAt),
+      shippedAt: num(d.shippedAt),
+    };
+  }
+
+  function normalizeMember(doc) {
+    const d = doc.data() || {};
+    return { id: doc.id, name: clean(d.name, MAX_OWNER), order: num(d.order), createdAt: num(d.createdAt) };
+  }
+
+  const byBoard = (a, b) =>
+    a.priority - b.priority || a.rank - b.rank || a.createdAt - b.createdAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const byOrder = (a, b) => a.order - b.order || a.createdAt - b.createdAt || a.name.localeCompare(b.name);
+  const openItems = () => state.items.filter((i) => i.status !== "shipped").sort(byBoard);
+  const tierList = (p, exceptId) => openItems().filter((i) => i.priority === p && i.id !== exceptId);
+
+  function endRank(p, exceptId) {
+    const list = tierList(p, exceptId);
+    return list.length ? list[list.length - 1].rank + STEP : STEP;
+  }
+
+  const findMember = (name) => state.team.find((m) => lower(m.name) === lower(name));
+  const ownedBy = (name) => state.items.filter((i) => i.owner && lower(i.owner) === lower(name));
+  const openCount = (name) => ownedBy(name).filter((i) => i.status !== "shipped").length;
+
+  // Teammates in roster order, then anyone else who owns an item.
+  function owners() {
+    const seen = new Set();
+    const out = [];
+    const add = (name) => {
+      if (name && !seen.has(lower(name))) {
+        seen.add(lower(name));
+        out.push(name);
+      }
+    };
+    state.team.slice().sort(byOrder).forEach((m) => add(m.name));
+    state.items
+      .map((i) => i.owner)
+      .filter((o) => o && !seen.has(lower(o)))
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .forEach(add);
+    return out;
+  }
+
+  function canonicalOwner(value) {
+    const name = clean(value, MAX_OWNER);
+    if (!name) return "";
+    return owners().find((o) => lower(o) === lower(name)) || name;
+  }
+
+  function initials(name) {
+    const parts = clean(name, MAX_OWNER).split(" ").filter(Boolean);
+    if (!parts.length) return "";
+    const first = Array.from(parts[0])[0] || "";
+    const last = parts.length > 1 ? Array.from(parts[parts.length - 1])[0] || "" : "";
+    return (first + last).toUpperCase();
+  }
+
+  function loadLabel(name) {
+    const open = ownedBy(name).filter((i) => i.status !== "shipped");
+    if (!open.length) return "Nothing open";
+    const now = open.filter((i) => i.priority === 0).length;
+    return open.length + " open" + (now ? " \u00b7 " + now + " in Now" : "");
+  }
+
+  function stamp(ms) {
+    if (!ms) return "";
+    const d = new Date(ms);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) {
+      return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
+    const opts = { month: "short", day: "numeric" };
+    if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+    return d.toLocaleDateString("en-US", opts);
+  }
+
+  /* ---------- markup ---------- */
+  function ownerChip(it, editable) {
+    const has = !!it.owner;
+    const face = has
+      ? `<span class="avatar" aria-hidden="true">${esc(initials(it.owner))}</span>`
+      : `<span class="avatar avatar-empty" aria-hidden="true"></span>`;
+    const name = `<span class="owner-name">${has ? esc(it.owner) : "No owner"}</span>`;
+    const cls = "owner" + (has ? "" : " is-empty");
+    if (!editable) return `<span class="${cls}">${face}${name}</span>`;
+    const label = has ? `Owner: ${it.owner}. Change owner` : "No owner. Assign an owner";
+    return `<button type="button" class="${cls}" data-action="owner" data-key="owner-${esc(it.id)}" aria-haspopup="dialog" aria-expanded="${popId === it.id}" aria-label="${esc(label)}">${face}${name}</button>`;
+  }
+
+  const editBtn = (it) =>
+    `<button type="button" class="edit-btn" data-action="edit" data-key="edit-${esc(it.id)}" aria-label="Edit ${esc(it.title)}">Edit</button>`;
+  const statusTag = (it) => (it.status === "active" ? `<span class="status">In progress</span>` : "");
+  const dim = (it) => (focusOwner && lower(it.owner) !== focusOwner ? " is-dim" : "");
+
+  function itemAttrs(it, editable, movable) {
+    let attrs = ` data-id="${esc(it.id)}"`;
+    if (movable) attrs += " data-drag";
+    if (editable) attrs += " data-openable";
+    if (editable && movable && finePointer) attrs += ' draggable="true"';
+    return attrs;
+  }
+
+  function cardHTML(it, n, editable) {
+    return `<li class="card${it.id === freshId ? " is-fresh" : ""}${dim(it)}"${itemAttrs(it, editable, true)}>
+      <div class="card-top"><span class="rank">${pad(n)}</span>${statusTag(it)}</div>
+      <h3 class="card-title">${esc(it.title)}</h3>
+      ${it.note ? `<p class="card-note">${esc(it.note)}</p>` : ""}
+      <div class="card-foot">${ownerChip(it, editable)}${editable ? editBtn(it) : ""}</div>
+    </li>`;
+  }
+
+  function rowHTML(it, n, editable) {
+    return `<li class="row-item${it.id === freshId ? " is-fresh" : ""}${dim(it)}"${itemAttrs(it, editable, true)}>
+      <span class="rank">${pad(n)}</span>
+      <div class="row-main">
+        <span class="row-title">${esc(it.title)}</span>
+        ${statusTag(it)}
+        ${it.note ? `<span class="row-note">${esc(it.note)}</span>` : ""}
+      </div>
+      ${ownerChip(it, editable)}
+      ${editable ? editBtn(it) : ""}
+    </li>`;
+  }
+
+  function shippedHTML(it, editable) {
+    const when = stamp(it.shippedAt || it.updatedAt);
+    const meta = [it.owner, when ? "Shipped " + when : "Shipped"].filter(Boolean).join(" \u00b7 ");
+    return `<li class="row-item is-shipped${dim(it)}"${itemAttrs(it, editable, false)}>
+      <span class="check" aria-hidden="true">&#10003;</span>
+      <div class="row-main">
+        <span class="row-title">${esc(it.title)}</span>
+        <span class="row-meta">${esc(meta)}</span>
+      </div>
+      ${editable ? editBtn(it) : ""}
+    </li>`;
+  }
+
+  function emptyHTML(t, p, editable, slot) {
+    const add = editable
+      ? `<button type="button" class="link-btn" data-action="add-to" data-priority="${p}" data-key="add-${t.key}">Add to ${t.name}</button>`
+      : "";
+    return `<div class="tier-empty${slot ? " is-slot" : ""}"><p>${esc(t.empty)}</p>${add}</div>`;
+  }
+
+  function memberHTML(name, editable) {
+    const key = lower(name);
+    const member = findMember(name);
+    const remove =
+      editable && member && !ownedBy(name).length
+        ? `<button type="button" class="member-x" data-action="remove-member" data-member="${esc(member.id)}" aria-label="Remove ${esc(name)} from the team">&times;</button>`
+        : "";
+    return `<li class="member">
+      <button type="button" class="member-btn" data-action="focus" data-name="${esc(name)}" data-key="member-${esc(key)}" aria-pressed="${focusOwner === key}">
+        <span class="avatar avatar-lg" aria-hidden="true">${esc(initials(name))}</span>
+        <span class="member-text"><span class="member-name">${esc(name)}</span><span class="member-load">${esc(loadLabel(name))}</span></span>
+      </button>${remove}
+    </li>`;
+  }
+
+  /* ---------- render ---------- */
+  function renderScan() {
+    const time = $("#scan-time");
+    const apex = $("#scan-apex");
+    const apexK = $("#apex-k");
+    const apexV = $("#apex-v");
+    const bars = document.querySelectorAll("[data-bar]");
+    apex.classList.remove("is-flag", "is-clear");
+    apex.removeAttribute("aria-label");
+    delete apex.dataset.target;
+
+    if (state.phase !== "ready") {
+      const offline = state.phase === "offline";
+      time.textContent = offline ? "OFFLINE" : "READING";
+      ["#m-open", "#m-shipped", "#m-unowned"].forEach((s) => ($(s).textContent = "\u2013"));
+      bars.forEach((b) => {
+        b.querySelector(".bar-n").textContent = "";
+        b.querySelector(".bar-fill").style.setProperty("--v", "0");
+      });
+      apexK.textContent = offline ? "Can't reach the board" : "Reading the board";
+      apexV.textContent = offline ? "" : "\u2026";
+      apex.disabled = true;
+      return;
+    }
+
+    const open = openItems();
+    const unowned = open.filter((i) => !i.owner);
+    const counts = [0, 0, 0, 0, 0];
+    open.forEach((i) => counts[i.priority]++);
+    const max = Math.max(1, ...counts);
+    $("#m-open").textContent = open.length;
+    $("#m-shipped").textContent = state.items.length - open.length;
+    $("#m-unowned").textContent = unowned.length;
+    bars.forEach((b) => {
+      const n = counts[Number(b.dataset.bar)];
+      b.querySelector(".bar-n").textContent = n;
+      b.querySelector(".bar-fill").style.setProperty("--v", String(n / max));
+    });
+    const latest = state.items.reduce((m, i) => Math.max(m, i.updatedAt, i.createdAt), 0);
+    time.textContent = latest ? "UPDATED " + stamp(latest).toUpperCase() : "EMPTY";
+
+    if (unowned.length) {
+      const top = unowned[0];
+      apex.classList.add("is-flag");
+      apexK.textContent = top.title;
+      apexV.textContent = "NO OWNER";
+      apex.dataset.target = top.id;
+      apex.disabled = !canEdit();
+      apex.setAttribute("aria-label", `${top.title} has no owner. Assign one.`);
+    } else if (open.length) {
+      apex.classList.add("is-clear");
+      apexK.textContent = "Every item has an owner";
+      apexV.textContent = "CLEAR";
+      apex.disabled = true;
+    } else {
+      apexK.textContent = "The board is empty";
+      apexV.textContent = "";
+      apex.disabled = true;
+    }
+  }
+
+  function renderTeam() {
+    const list = $("#members");
+    const status = $("#team-status");
+    if (state.phase !== "ready" || !state.teamReady) {
+      const msg = state.phase === "offline" ? "Not loaded." : "Reading the team\u2026";
+      list.innerHTML = `<li class="member-empty">${msg}</li>`;
+      status.textContent = "";
+      return;
+    }
+    const names = owners();
+    if (focusOwner && !names.some((n) => lower(n) === focusOwner)) focusOwner = "";
+    const focused = names.find((n) => lower(n) === focusOwner);
+    if (focused) {
+      status.innerHTML = `Showing ${esc(focused)}'s items.<button type="button" class="link-btn" data-action="focus-clear" data-key="focus-clear">Show everyone</button>`;
+    } else {
+      status.textContent = names.length ? "Select a name to highlight what they own." : "";
+    }
+    const editable = canEdit();
+    list.innerHTML = names.length
+      ? names.map((n) => memberHTML(n, editable)).join("")
+      : `<li class="member-empty">No teammates yet.</li>`;
+  }
+
+  function renderTiers() {
+    const editable = canEdit();
+    const open = openItems();
+    const place = new Map(open.map((it, i) => [it.id, i + 1]));
+    TIERS.forEach((t, p) => {
+      const sec = document.getElementById(t.key);
+      const body = sec.querySelector("[data-items]");
+      const count = sec.querySelector("[data-count]");
+      const slot = p === 0;
+      if (state.phase !== "ready") {
+        count.textContent = "";
+        const msg = state.phase === "loading" ? "Reading the board\u2026" : "Not loaded.";
+        body.innerHTML = `<div class="tier-empty${slot ? " is-slot" : ""}"><p>${msg}</p></div>`;
+        return;
+      }
+      const list = open.filter((i) => i.priority === p);
+      count.textContent = list.length ? list.length + (list.length === 1 ? " item" : " items") : "Empty";
+      if (!list.length) {
+        body.innerHTML = emptyHTML(t, p, editable, slot);
+        return;
+      }
+      body.innerHTML = slot
+        ? `<ol class="cards">${list.map((it) => cardHTML(it, place.get(it.id), editable)).join("")}</ol>`
+        : `<ol class="rows">${list.map((it) => rowHTML(it, place.get(it.id), editable)).join("")}</ol>`;
+    });
+  }
+
+  function renderShipped() {
+    const sec = $("#shipped");
+    const body = sec.querySelector("[data-items]");
+    const count = sec.querySelector("[data-count]");
+    if (state.phase !== "ready") {
+      count.textContent = "";
+      body.innerHTML = "";
+      return;
+    }
+    const editable = canEdit();
+    const list = state.items
+      .filter((i) => i.status === "shipped")
+      .sort((a, b) => (b.shippedAt || b.updatedAt) - (a.shippedAt || a.updatedAt));
+    count.textContent = list.length ? list.length + " shipped" : "None yet";
+    body.innerHTML = list.length
+      ? `<ul class="rows">${list.map((it) => shippedHTML(it, editable)).join("")}</ul>`
+      : `<p class="tier-empty">Nothing shipped yet. Set an item's status to Shipped and it moves here.</p>`;
+  }
+
+  function renderAccess() {
+    const offline = state.phase === "offline";
+    $("#composer").hidden = offline;
+    const note = $("#access-note");
+    note.hidden = !offline;
+    note.textContent = offline ? "Couldn't reach the roadmap. Check your connection, then reload the page." : "";
+    $("#new-submit").disabled = state.phase !== "ready" || submitting;
+    $("#foot-hint").hidden = !(canEdit() && finePointer);
+    $("#member-add").hidden = !canEdit();
+  }
+
+  function render() {
+    if (dragId) {
+      renderPending = true;
+      return;
+    }
+    const active = document.activeElement;
+    const focusKey = active && active.dataset ? active.dataset.key : "";
+    renderScan();
+    renderTeam();
+    renderTiers();
+    renderShipped();
+    $("#owner-list").innerHTML = owners().map((o) => `<option value="${esc(o)}"></option>`).join("");
+    renderAccess();
+    freshId = null;
+    if (focusKey && !document.contains(active)) {
+      const el = byKey(focusKey);
+      if (el) el.focus({ preventScroll: true });
+    }
+    if (popId) placePop();
+    if (editingId && dlg.open && !find(editingId)) {
+      dlg.close();
+      toast("Someone else deleted that item.");
+    }
+  }
+
+  /* ---------- writes ---------- */
+  const chains = new Map();
+  function queue(key, fn) {
+    const prev = chains.get(key) || Promise.resolve();
+    const run = prev.catch(() => {}).then(fn);
+    chains.set(key, run);
+    run.catch(() => {}).then(() => {
+      if (chains.get(key) === run) chains.delete(key);
+    });
+    return run;
+  }
+
+  async function attempt(fn) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (e && e.code === "unavailable") {
+        await sleep(400 + Math.random() * 800);
+        return fn();
+      }
+      throw e;
+    }
+  }
+
+  async function write(key, fn) {
+    try {
+      await queue(key, () => attempt(fn));
+      return true;
+    } catch (e) {
+      writeFailed(e);
+      return false;
+    }
+  }
+
+  function writeFailed(e) {
+    const code = e && e.code;
+    if (code === "unauthorized") {
+      lockOut("The password changed. Enter the new one to keep going.");
+    } else if (code === "missing") {
+      toast("Someone else removed that item.");
+    } else if (code === "full") {
+      toast("The roadmap is full. Delete shipped or parked items to make room.");
+    } else if (code === "bad_request" || code === "too_large") {
+      toast("That change couldn't be saved. Reload the page and try again.");
+    } else {
+      toast("That change didn't save. Check your connection and try again.");
+    }
+  }
+
+  function memberId(name) {
+    const slug = lower(name).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+    return slug || "m-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  // Anyone who is given an item joins the team, so the team strip always shows every owner.
+  async function ensureMember(name) {
+    const n = clean(name, MAX_OWNER);
+    if (!n || findMember(n)) return true;
+    const id = memberId(n);
+    const order = state.team.reduce((m, t) => Math.max(m, t.order), 0) + STEP;
+    return write("team/" + id, () => db.doc("team/" + id).set({ name: n, order, createdAt: Date.now() }));
+  }
+
+  async function removeMember(id) {
+    const m = state.team.find((t) => t.id === id);
+    if (!m || !canEdit()) return;
+    if (ownedBy(m.name).length) {
+      toast(`Reassign ${m.name}'s items before removing them.`);
+      return;
+    }
+    if (focusOwner === lower(m.name)) focusOwner = "";
+    const body = { name: m.name, order: m.order, createdAt: m.createdAt };
+    const ok = await write("team/" + id, () => db.doc("team/" + id).delete());
+    if (ok) {
+      toast(`Removed ${m.name} from the team.`, {
+        label: "Undo",
+        run: () => write("team/" + id, () => db.doc("team/" + id).set(body)),
+      });
+    }
+  }
+
+  async function addItem(title, priority, owner) {
+    if (owner) ensureMember(owner);
+    const ref = db.collection("items").doc();
+    const now = Date.now();
+    const body = { title, note: "", priority, owner, status: "planned", rank: endRank(priority), createdAt: now, updatedAt: now };
+    freshId = ref.id;
+    return write(ref.id, () => ref.set(body));
+  }
+
+  async function assignOwner(id, value) {
+    const it = find(id);
+    closePop(true);
+    if (!it || !canEdit()) return;
+    const owner = canonicalOwner(value);
+    if (owner === it.owner) return;
+    if (owner) ensureMember(owner);
+    const ok = await write(id, () => db.doc("items/" + id).update({ owner, updatedAt: Date.now() }));
+    if (ok) toast(owner ? `Assigned to ${owner}.` : "Owner removed.");
+  }
+
+  async function moveItem(id, priority, index) {
+    const it = find(id);
+    if (!it || !canEdit()) return;
+    const list = tierList(priority, id);
+    const at = Math.max(0, Math.min(index, list.length));
+    if (it.priority === priority && tierList(priority).findIndex((x) => x.id === id) === at) return;
+    const prev = list[at - 1];
+    const next = list[at];
+    let rank = STEP;
+    if (prev && next) rank = (prev.rank + next.rank) / 2;
+    else if (prev) rank = prev.rank + STEP;
+    else if (next) rank = next.rank - STEP;
+    const changedTier = it.priority !== priority;
+    const ok = await write(id, () => db.doc("items/" + id).update({ priority, rank, updatedAt: Date.now() }));
+    if (ok && changedTier) toast(`Moved to ${TIERS[priority].name}.`);
+  }
+
+  /* ---------- composer ---------- */
+  $("#composer").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!canEdit() || submitting) return;
+    const titleEl = $("#new-title");
+    const title = clean(titleEl.value, MAX_TITLE);
+    if (!title) {
+      titleEl.focus();
+      toast("Name the item first.");
+      return;
+    }
+    const priority = Number(e.currentTarget.elements["new-priority"].value) || 0;
+    const owner = canonicalOwner($("#new-owner").value);
+    submitting = true;
+    renderAccess();
+    const ok = await addItem(title, priority, owner);
+    submitting = false;
+    renderAccess();
+    if (ok) {
+      titleEl.value = "";
+      $("#new-owner").value = "";
+      titleEl.focus({ preventScroll: true });
+      toast(`Added to ${TIERS[priority].name}.`);
+    }
+  });
+
+  function focusComposer(p) {
+    const radio = document.getElementById("new-p" + p);
+    if (radio) radio.checked = true;
+    const input = $("#new-title");
+    input.scrollIntoView(scrollOpts);
+    input.focus({ preventScroll: true });
+  }
+
+  /* ---------- team roster ---------- */
+  function showMemberForm(open) {
+    memberForm.hidden = !open;
+    memberOpen.hidden = open;
+    if (open) {
+      memberInput.value = "";
+      memberInput.focus();
+    } else {
+      memberOpen.focus({ preventScroll: true });
+    }
+  }
+
+  memberForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = clean(memberInput.value, MAX_OWNER);
+    if (!name) {
+      showMemberForm(false);
+      return;
+    }
+    const existing = findMember(name);
+    if (existing) {
+      toast(`${existing.name} is already on the team.`);
+      memberInput.select();
+      return;
+    }
+    if (!canEdit()) return;
+    const ok = await ensureMember(name);
+    if (ok) {
+      toast(`Added ${name} to the team.`);
+      showMemberForm(false);
+    }
+  });
+  memberInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      showMemberForm(false);
+    }
+  });
+
+  /* ---------- owner picker ---------- */
+  function renderPop() {
+    const it = find(popId);
+    if (!it) {
+      closePop(false);
+      return;
+    }
+    const q = clean(popInput.value, MAX_OWNER);
+    const ql = lower(q);
+    const all = owners();
+    const choices = [];
+    if (q) {
+      const hits = all.filter((o) => lower(o).includes(ql));
+      const starts = hits.filter((o) => lower(o).startsWith(ql));
+      [...starts, ...hits.filter((o) => !starts.includes(o))].forEach((o) => choices.push({ name: o }));
+      if (!hits.some((o) => lower(o) === ql)) choices.push({ name: q, isNew: true });
+    } else {
+      all.forEach((o) => choices.push({ name: o }));
+    }
+    let html = choices
+      .map((c, i) => {
+        const face = c.isNew
+          ? `<span class="avatar avatar-empty" aria-hidden="true"></span>`
+          : `<span class="avatar" aria-hidden="true">${esc(initials(c.name))}</span>`;
+        const text = c.isNew ? `Assign to <b>${esc(c.name)}</b>` : esc(c.name);
+        const load = c.isNew ? "New" : openCount(c.name) + " open";
+        const current = !c.isNew && lower(c.name) === lower(it.owner) ? ' aria-current="true"' : "";
+        const active = q && i === 0 ? " is-active" : "";
+        return `<button type="button" class="opt${active}" data-action="pick" data-owner="${esc(c.name)}"${current}>${face}<span class="opt-name">${text}</span><span class="opt-load">${load}</span></button>`;
+      })
+      .join("");
+    if (!html) html = `<p class="opt-hint">No teammates yet. Type a name to add one.</p>`;
+    if (it.owner) html += `<button type="button" class="opt opt-clear" data-action="pick" data-owner="">Remove owner</button>`;
+    popList.innerHTML = html;
+  }
+
+  function placePop() {
+    const anchor = popId ? byKey("owner-" + popId) : null;
+    if (!anchor) {
+      closePop(false);
+      return;
+    }
+    const r = anchor.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const w = pop.offsetWidth;
+    const h = pop.offsetHeight;
+    const left = Math.max(16, Math.min(r.left, vw - w - 16));
+    let top = r.bottom + 8;
+    if (top + h > vh - 12 && r.top - h - 8 > 12) top = r.top - h - 8;
+    pop.style.left = left + window.scrollX + "px";
+    pop.style.top = top + window.scrollY + "px";
+  }
+
+  function openPop(id) {
+    const anchor = byKey("owner-" + id);
+    if (!anchor || !canEdit()) return;
+    if (popId && popId !== id) closePop(false);
+    popId = id;
+    popInput.value = "";
+    renderPop();
+    pop.hidden = false;
+    placePop();
+    anchor.setAttribute("aria-expanded", "true");
+    popInput.focus({ preventScroll: true });
+  }
+
+  function closePop(returnFocus) {
+    if (!popId) return;
+    const anchor = byKey("owner-" + popId);
+    popId = null;
+    pop.hidden = true;
+    if (anchor) {
+      anchor.setAttribute("aria-expanded", "false");
+      if (returnFocus) anchor.focus({ preventScroll: true });
+    }
+  }
+
+  function revealOwner(id) {
+    const chip = byKey("owner-" + id);
+    if (!chip) return;
+    chip.scrollIntoView(scrollOpts);
+    setTimeout(() => openPop(id), reduceMotion ? 0 : 420);
+  }
+
+  popInput.addEventListener("input", renderPop);
+  popInput.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const first = popList.querySelector(".opt");
+      if (first) first.focus();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const first = popList.querySelector(".opt.is-active");
+      if (first) assignOwner(popId, first.dataset.owner);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closePop(true);
+    }
+  });
+  popList.addEventListener("keydown", (e) => {
+    const opts = [...popList.querySelectorAll(".opt")];
+    const i = opts.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      (opts[i + 1] || opts[i]).focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (i <= 0) popInput.focus();
+      else opts[i - 1].focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closePop(true);
+    }
+  });
+  pop.addEventListener("focusout", (e) => {
+    const next = e.relatedTarget;
+    if (next && !pop.contains(next) && next !== byKey("owner-" + popId)) closePop(false);
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!popId || pop.contains(e.target)) return;
+    const anchor = byKey("owner-" + popId);
+    if (anchor && anchor.contains(e.target)) return;
+    closePop(false);
+  });
+  window.addEventListener("resize", () => {
+    if (popId) placePop();
+  });
+
+  /* ---------- edit sheet ---------- */
+  function openEdit(id) {
+    const it = find(id);
+    if (!it || !canEdit()) return;
+    closePop(false);
+    editingId = id;
+    $("#edit-title").value = it.title;
+    $("#edit-note").value = it.note;
+    $("#edit-owner").value = it.owner;
+    document.getElementById("edit-p" + it.priority).checked = true;
+    document.getElementById("edit-s-" + it.status).checked = true;
+    if (!dlg.open) dlg.showModal();
+    $("#edit-title").focus();
+  }
+
+  dlg.addEventListener("close", () => {
+    editingId = null;
+  });
+  let downOnBackdrop = false;
+  dlg.addEventListener("pointerdown", (e) => {
+    downOnBackdrop = e.target === dlg;
+  });
+  dlg.addEventListener("click", (e) => {
+    if (e.target === dlg && downOnBackdrop) dlg.close();
+    downOnBackdrop = false;
+  });
+
+  $("#edit-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const it = find(editingId);
+    if (!it) {
+      dlg.close();
+      return;
+    }
+    const titleEl = $("#edit-title");
+    const title = clean(titleEl.value, MAX_TITLE);
+    if (!title) {
+      titleEl.focus();
+      toast("An item needs a title.");
+      return;
+    }
+    const form = e.currentTarget;
+    const priority = Number(form.elements["edit-priority"].value);
+    const status = form.elements["edit-status"].value;
+    const note = cleanNote($("#edit-note").value);
+    const owner = canonicalOwner($("#edit-owner").value);
+    const now = Date.now();
+    const patch = {};
+    if (title !== it.title) patch.title = title;
+    if (note !== it.note) patch.note = note;
+    if (owner !== it.owner) patch.owner = owner;
+    if (STATUSES.includes(status) && status !== it.status) {
+      patch.status = status;
+      if (status === "shipped") patch.shippedAt = now;
+    }
+    if (Number.isInteger(priority) && priority !== it.priority) {
+      patch.priority = priority;
+      patch.rank = endRank(priority, it.id);
+    }
+    dlg.close();
+    if (!Object.keys(patch).length) return;
+    if (patch.owner) ensureMember(patch.owner);
+    patch.updatedAt = now;
+    const ok = await write(it.id, () => db.doc("items/" + it.id).update(patch));
+    if (ok) toast(patch.status === "shipped" ? "Marked shipped. Nice work." : "Saved.");
+  });
+
+  $("#edit-delete").addEventListener("click", async () => {
+    const it = find(editingId);
+    dlg.close();
+    if (!it) return;
+    const body = {
+      title: it.title,
+      note: it.note,
+      priority: it.priority,
+      owner: it.owner,
+      status: it.status,
+      rank: it.rank,
+      createdAt: it.createdAt,
+      updatedAt: Date.now(),
+    };
+    if (it.shippedAt) body.shippedAt = it.shippedAt;
+    const ok = await write(it.id, () => db.doc("items/" + it.id).delete());
+    if (ok) {
+      toast(`Deleted "${it.title}".`, {
+        label: "Undo",
+        run: () => write(it.id, () => db.doc("items/" + it.id).set(body)),
+      });
+    }
+  });
+
+  /* ---------- clicks ---------- */
+  document.addEventListener("click", (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t) return;
+    const act = t.closest("[data-action]");
+    if (act) {
+      const holder = act.closest("[data-id]");
+      const id = holder ? holder.dataset.id : "";
+      switch (act.dataset.action) {
+        case "owner":
+          if (popId === id) closePop(true);
+          else openPop(id);
+          break;
+        case "edit":
+          openEdit(id);
+          break;
+        case "pick":
+          assignOwner(popId, act.dataset.owner);
+          break;
+        case "add-to":
+          focusComposer(Number(act.dataset.priority));
+          break;
+        case "apex":
+          if (act.dataset.target) revealOwner(act.dataset.target);
+          break;
+        case "close":
+          dlg.close();
+          break;
+        case "focus": {
+          const key = lower(act.dataset.name);
+          focusOwner = focusOwner === key ? "" : key;
+          render();
+          break;
+        }
+        case "focus-clear":
+          focusOwner = "";
+          render();
+          break;
+        case "member-add-open":
+          showMemberForm(true);
+          break;
+        case "remove-member":
+          removeMember(act.dataset.member);
+          break;
+        case "sign-out":
+          savePassword("");
+          window.location.reload();
+          break;
+      }
+      return;
+    }
+    const item = t.closest("[data-openable]");
+    if (item && !t.closest("a, button, input, textarea, label")) openEdit(item.dataset.id);
+  });
+
+  /* ---------- drag to rerank ---------- */
+  function dropTarget(zone, x, y) {
+    const els = [...zone.querySelectorAll("[data-drag]")].filter((el) => el.dataset.id !== dragId);
+    if (!els.length) return { index: 0, el: null, after: false };
+    let best = 0;
+    let bestD = Infinity;
+    els.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      const dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      const dy = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    });
+    const el = els[best];
+    const r = el.getBoundingClientRect();
+    let after;
+    if (el.classList.contains("row-item")) after = y > r.top + r.height / 2;
+    else if (y > r.bottom) after = true;
+    else if (y < r.top) after = false;
+    else after = x > r.left + r.width / 2;
+    return { index: best + (after ? 1 : 0), el, after };
+  }
+
+  function clearDropMarks() {
+    document.querySelectorAll(".is-drop").forEach((n) => n.classList.remove("is-drop"));
+    document.querySelectorAll(".drop-before, .drop-after").forEach((n) => n.classList.remove("drop-before", "drop-after"));
+  }
+
+  function finishDrag() {
+    if (!dragId) return;
+    dragId = null;
+    dropKey = "";
+    clearDropMarks();
+    document.querySelectorAll(".is-dragging").forEach((n) => n.classList.remove("is-dragging"));
+    if (renderPending) {
+      renderPending = false;
+      render();
+    }
+  }
+
+  document.addEventListener("dragstart", (e) => {
+    const el = e.target instanceof Element ? e.target.closest('[draggable="true"][data-id]') : null;
+    if (!el || !canEdit()) return;
+    closePop(false);
+    dragId = el.dataset.id;
+    el.classList.add("is-dragging");
+    e.dataTransfer.effectAllowed = "move";
+    const it = find(dragId);
+    try {
+      e.dataTransfer.setData("text/plain", it ? it.title : dragId);
+    } catch (_) {
+      /* some browsers refuse custom data; the drag still works */
+    }
+  });
+
+  document.addEventListener("dragover", (e) => {
+    if (!dragId) return;
+    const zone = e.target instanceof Element ? e.target.closest("[data-drop]") : null;
+    if (!zone) {
+      if (dropKey) clearDropMarks();
+      dropKey = "";
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const target = dropTarget(zone, e.clientX, e.clientY);
+    const key = zone.id + ":" + target.index;
+    if (key === dropKey) return;
+    dropKey = key;
+    clearDropMarks();
+    zone.classList.add("is-drop");
+    if (target.el) target.el.classList.add(target.after ? "drop-after" : "drop-before");
+  });
+
+  document.addEventListener("drop", (e) => {
+    if (!dragId) return;
+    const zone = e.target instanceof Element ? e.target.closest("[data-drop]") : null;
+    if (!zone) return;
+    e.preventDefault();
+    const target = dropTarget(zone, e.clientX, e.clientY);
+    const id = dragId;
+    finishDrag();
+    moveItem(id, Number(zone.dataset.drop), target.index);
+  });
+
+  document.addEventListener("dragend", finishDrag);
+
+  /* ---------- toast ---------- */
+  function toast(message, action) {
+    const el = $("#toast");
+    el.textContent = "";
+    const span = document.createElement("span");
+    span.textContent = message;
+    el.appendChild(span);
+    if (action) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = action.label;
+      b.addEventListener("click", () => {
+        hideToast();
+        action.run();
+      });
+      el.appendChild(b);
+    }
+    el.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("is-on")));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, action ? 7000 : 3200);
+  }
+
+  function hideToast() {
+    const el = $("#toast");
+    el.classList.remove("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.hidden = true;
+    }, 220);
+  }
+
+  /* ---------- server ---------- */
+  function apiError(code) {
+    const err = new Error(code);
+    err.code = code;
+    return err;
+  }
+
+  async function call(path, init) {
+    let res;
+    try {
+      res = await fetch(API + path, {
+        method: (init && init.method) || "GET",
+        body: init && init.body,
+        cache: "no-store",
+        headers: { "content-type": "application/json", "x-roadmap-password": password },
+      });
+    } catch (_) {
+      throw apiError("unavailable");
+    }
+    if (res.status === 401) throw apiError("unauthorized");
+    let body = null;
+    try {
+      body = await res.json();
+    } catch (_) {
+      body = null;
+    }
+    if (!res.ok || !body) throw apiError((body && body.error) || (res.status >= 500 || !body ? "unavailable" : "bad_request"));
+    return body;
+  }
+
+  // The same calls the page makes on any store: collection(), doc(), set/update/delete
+  // and onSnapshot. Changes show at once and are confirmed by the server's reply;
+  // other people's changes arrive by polling.
+  function serverStore(initial) {
+    const listeners = new Map();
+    let board = { version: -1, items: {}, team: {} };
+    let pending = 0;
+    let timer = 0;
+    const toMap = (rows) => {
+      const out = {};
+      (Array.isArray(rows) ? rows : []).forEach((row) => {
+        if (row && typeof row.id === "string" && row.data && typeof row.data === "object") out[row.id] = row.data;
+      });
+      return out;
+    };
+    const snapshot = (name) => {
+      const docs = board[name] || {};
+      return { docs: Object.keys(docs).map((id) => ({ id, exists: true, data: () => docs[id] })) };
+    };
+    const emit = () =>
+      listeners.forEach((fns, name) => {
+        const snap = snapshot(name);
+        fns.forEach((fn) => fn(snap));
+      });
+    const accept = (data, force) => {
+      if (!data || (!force && num(data.version) < board.version)) return;
+      board = { version: num(data.version), items: toMap(data.items), team: toMap(data.team) };
+      emit();
+    };
+
+    async function refresh(force) {
+      if (pending && !force) return;
+      try {
+        const data = await call("/board");
+        if (pending && !force) return;
+        accept(data, force);
+      } catch (err) {
+        if (err.code === "unauthorized") lockOut("The password changed. Enter the new one to keep going.");
+      }
+    }
+
+    async function send(op, change) {
+      pending += 1;
+      board = { ...board, [op.collection]: change(board[op.collection] || {}) };
+      emit();
+      let failure = null;
+      try {
+        accept(await call("/ops", { method: "POST", body: JSON.stringify({ ops: [op] }) }), true);
+      } catch (err) {
+        failure = err;
+      }
+      pending -= 1;
+      if (failure) {
+        if (failure.code !== "unauthorized") await refresh(true);
+        throw failure;
+      }
+    }
+
+    const ref = (name, id) => ({
+      id,
+      set: (data) => send({ op: "set", collection: name, id, data }, (docs) => ({ ...docs, [id]: { ...data } })),
+      update: (patch) => {
+        if (!(board[name] || {})[id]) return Promise.reject(apiError("missing"));
+        return send({ op: "update", collection: name, id, data: patch }, (docs) => ({ ...docs, [id]: { ...docs[id], ...patch } }));
+      },
+      delete: () =>
+        send({ op: "delete", collection: name, id }, (docs) => {
+          const next = { ...docs };
+          delete next[id];
+          return next;
+        }),
+    });
+
+    const poll = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        if (document.visibilityState === "visible") await refresh(false);
+        poll();
+      }, POLL_MS);
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refresh(false);
+    });
+
+    const newId = () => "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    accept(initial, true);
+    poll();
+    return {
+      refresh,
+      collection: (name) => ({
+        doc: (id) => ref(name, id || newId()),
+        onSnapshot: (next) => {
+          if (!listeners.has(name)) listeners.set(name, new Set());
+          listeners.get(name).add(next);
+          setTimeout(() => next(snapshot(name)), 0);
+          return () => listeners.get(name).delete(next);
+        },
+      }),
+      doc: (path) => {
+        const [name, id] = path.split("/");
+        return ref(name, id);
+      },
+    };
+  }
+
+  function subscribe() {
+    unsubs.forEach((stop) => stop());
+    unsubs = [
+      db.collection("items").onSnapshot((snap) => {
+        state.items = snap.docs.filter((d) => d.exists).map(normalize);
+        state.phase = "ready";
+        render();
+      }),
+      db.collection("team").onSnapshot((snap) => {
+        state.team = snap.docs
+          .filter((d) => d.exists)
+          .map(normalizeMember)
+          .filter((m) => m.name);
+        state.teamReady = true;
+        render();
+      }),
+    ];
+  }
+
+  /* ---------- password gate ---------- */
+  function showGate(message) {
+    closePop(false);
+    if (dlg.open) dlg.close();
+    page.hidden = true;
+    gate.hidden = false;
+    gateError.textContent = message || "";
+    gateInput.value = "";
+    gateInput.focus();
+  }
+
+  function lockOut(message) {
+    password = "";
+    savePassword("");
+    showGate(message);
+  }
+
+  function openBoard(initial) {
+    gate.hidden = true;
+    page.hidden = false;
+    if (db) {
+      db.refresh(true);
+      return;
+    }
+    db = serverStore(initial);
+    subscribe();
+  }
+
+  gateForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const value = gateInput.value.trim();
+    if (!value) {
+      gateError.textContent = "Enter the team password.";
+      gateInput.focus();
+      return;
+    }
+    gateSubmit.disabled = true;
+    gateSubmit.textContent = "Checking\u2026";
+    gateError.textContent = "";
+    password = value;
+    try {
+      const data = await call("/board");
+      savePassword(value);
+      openBoard(data);
+    } catch (err) {
+      password = "";
+      gateError.textContent =
+        err.code === "unauthorized" ? "That password isn't right." : "Couldn't reach the roadmap. Check your connection and try again.";
+      gateInput.select();
+    }
+    gateSubmit.disabled = false;
+    gateSubmit.textContent = "Open roadmap";
+  });
+
+  async function boot() {
+    render();
+    if (!password) {
+      showGate("");
+      return;
+    }
+    gate.hidden = true;
+    page.hidden = false;
+    try {
+      openBoard(await call("/board"));
+    } catch (err) {
+      if (err.code === "unauthorized") {
+        lockOut("");
+      } else {
+        state.phase = "offline";
+        render();
+      }
+    }
+  }
+
+  boot();
+})();
+</script>
+
+</body>
+</html>
